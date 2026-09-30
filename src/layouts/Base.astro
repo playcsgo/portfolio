@@ -30,6 +30,13 @@ const { links } = site;
       href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
+    <script is:inline>
+      // Apply the saved theme before first paint to avoid a flash
+      try {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+      } catch {}
+    </script>
   </head>
   <body>
     <header class="site-header">
@@ -41,6 +48,15 @@ const { links } = site;
           <a href={href(lang, '/#contact')}>{t(lang, 'nav_contact')}</a>
         </nav>
         <div class="pills">
+          <button class="pill icon theme-toggle" type="button" aria-label={lang === 'zh' ? '切換日夜模式' : 'Toggle dark mode'}>
+            <svg class="sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+            </svg>
+            <svg class="moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path>
+            </svg>
+          </button>
           <a class="pill" href={altPath(lang, path)} hreflang={lang === 'zh' ? 'en' : 'zh-Hant-TW'}>{t(lang, 'switch_lang')}</a>
           {links.resume && <a class="pill solid" href={links.resume} target="_blank" rel="noopener">{t(lang, 'resume')} ↗</a>}
         </div>
@@ -70,6 +86,16 @@ const { links } = site;
         </div>
       </div>
     </footer>
+    <script is:inline>
+      document.querySelector('.theme-toggle').addEventListener('click', () => {
+        const root = document.documentElement;
+        const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+        root.dataset.theme = dark ? 'light' : 'dark';
+        try {
+          localStorage.setItem('theme', root.dataset.theme);
+        } catch {}
+      });
+    </script>
   </body>
 </html>
 
@@ -276,6 +302,31 @@ const { links } = site;
   }
   .pill:hover {
     border-color: var(--text);
+  }
+  .pill.icon {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+    background: none;
+    cursor: pointer;
+  }
+  /* Show the icon of the mode you would switch to */
+  .theme-toggle .sun {
+    display: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .theme-toggle .sun {
+      display: block;
+    }
+    :root:not([data-theme='light']) .theme-toggle .moon {
+      display: none;
+    }
+  }
+  :root[data-theme='dark'] .theme-toggle .sun {
+    display: block;
+  }
+  :root[data-theme='dark'] .theme-toggle .moon {
+    display: none;
   }
   .pill.solid {
     background: var(--invert-bg);
