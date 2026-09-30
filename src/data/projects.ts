@@ -64,6 +64,14 @@ export interface Project {
   oneLiner: L;
   /** One or two sentences on the problem, for the home card */
   pain: L;
+  /** Home page row: short copy, index stack and the image panel */
+  home: {
+    blurb: L;
+    byline: L;
+    index: string;
+    tags: string[];
+    panel: { bg: string; layout: 'pair' | 'frame' | 'bleed' | 'code'; shots?: number[]; code?: { label: string; source: string }[] };
+  };
   tagline: L;
   role: L;
   stack: string[];
@@ -82,6 +90,13 @@ export const projects: Project[] = [
   // ─────────────────────────────────────────────── Yoution
   {
     slug: 'yoution',
+    home: {
+      blurb: { zh: '把 YouTube、文章、PDF 變成示意圖與測驗。後端要處理的是：LLM 又慢又貴還會被限流，付費功能還得防濫用。', en: 'Turns YouTube videos, articles and PDFs into diagrams and quizzes. On the backend, LLM calls are slow, costly and rate-limited, and paid features have to resist abuse.' },
+      byline: { zh: '獨立開發', en: 'Solo' },
+      index: 'Next.js · Supabase · Stripe · AI SDK',
+      tags: ['Next.js 15', 'Supabase / Postgres', 'RLS', 'pg_cron', 'Stripe'],
+      panel: { bg: '#EBDCCF', layout: 'pair', shots: [0, 1] },
+    },
     icon: iconYoution,
     oneLiner: { zh: '把 YouTube 影片轉成示意圖與測驗。', en: 'Turns YouTube videos into diagrams and quizzes.' },
     pain: { zh: '長影片看完隔天就忘。後端要處理的是：LLM 呼叫又慢又貴、會被限流，付費功能還得防濫用。', en: 'Long videos are forgotten by the next day. On the backend, LLM calls are slow, costly and rate-limited, and paid features have to resist abuse.' },
@@ -220,6 +235,13 @@ export const projects: Project[] = [
   // ─────────────────────────────────────────────── Line Monitor
   {
     slug: 'mock-mes',
+    home: {
+      blurb: { zh: '模擬產線 MES。工作站用 WebSocket 上傳測試結果，後端即時算良率、觸發告警：越晚發現異常，報廢越多。', en: 'A mock MES: stations stream test results over WebSocket, and the backend computes yield and raises alerts in real time. The later a failing station is noticed, the more gets scrapped.' },
+      byline: { zh: '獨立開發', en: 'Solo' },
+      index: 'FastAPI · WebSocket · MongoDB',
+      tags: ['FastAPI', 'WebSocket', 'MongoDB async', 'GraphQL', 'pytest'],
+      panel: { bg: '#1E2327', layout: 'frame', shots: [0] },
+    },
     icon: iconMockMes,
     oneLiner: { zh: '模擬產線 MES，即時監控生產進度與良率。', en: 'A mock MES that monitors production progress and yield in real time.' },
     pain: { zh: '某一站開始異常，越晚發現報廢越多。資料要即時進來、良率要即時算出、異常要即時通知。', en: 'The later a failing station is noticed, the more product is scrapped. Data, yield and alerts all have to be real time.' },
@@ -365,6 +387,13 @@ export const projects: Project[] = [
   // ─────────────────────────────────────────────── Focus Correction
   {
     slug: 'focus-correction',
+    home: {
+      blurb: { zh: '專注期間離開 App 就記一次分心。系統不會告訴 App 是鎖螢幕還是切走，所以自己寫了 Swift／Kotlin 原生模組。', en: 'Leaving the app during a session counts as a distraction. The OS won\'t say whether the user locked the screen or switched apps, so I wrote native Swift / Kotlin modules.' },
+      byline: { zh: '獨立開發', en: 'Solo' },
+      index: 'React Native · Expo Modules · IAP',
+      tags: ['React Native', 'Expo Modules', 'IAP', '142 Maestro E2E'],
+      panel: { bg: '#16181B', layout: 'bleed', shots: [0] },
+    },
     icon: iconFocus,
     oneLiner: { zh: '透過自訂專注任務延長專注時間。', en: 'Builds longer focus sessions through self-defined tasks.' },
     pain: { zh: '一拿起手機就分心，卻不知道分心了幾次、多久；而系統不會告訴 App 使用者是鎖螢幕還是切去別的 App。', en: 'People lose focus to their phones without knowing how often or for how long, and the OS does not tell an app whether the user locked the screen or switched apps.' },
@@ -451,6 +480,13 @@ export const projects: Project[] = [
   // ─────────────────────────────────────────────── RabbitMQ
   {
     slug: 'async-jobs-rabbitmq',
+    home: {
+      blurb: { zh: '每次儲值、升級都是一則 RabbitMQ 訊息，交給背景 worker 處理，API 不會在尖峰時卡住。打開就是訪客帳號，可以直接玩。', en: 'Every top-up and upgrade is a RabbitMQ message handled by background workers, so the API stays responsive at peak. Open it and you are playing as a guest.' },
+      byline: { zh: '個人專案', en: 'Personal project' },
+      index: 'Express · RabbitMQ · Redis · pm2',
+      tags: ['RabbitMQ', 'Express', 'Redis session', 'pm2 workers', 'MongoDB TTL'],
+      panel: { bg: '#2B2521', layout: 'frame', shots: [0] },
+    },
     icon: iconGear,
     oneLiner: { zh: '點裝備小遊戲：儲值、升級裝備都經由 RabbitMQ 交給背景 worker 處理。', en: 'A gear-upgrade mini game where every top-up and upgrade goes through RabbitMQ to background workers.' },
     pain: { zh: '尖峰時在 API 裡同步處理會讓請求塞住；工作交出去後，還要確保訊息不會掉、結果能回傳。', en: 'Doing the work inside the API blocks requests at peak load; once work is handed off, messages must not be lost and results must come back.' },
@@ -569,6 +605,20 @@ export const projects: Project[] = [
   // ─────────────────────────────────────────────── Twitter API
   {
     slug: 'twitter-api-postgresql-graphql',
+    home: {
+      blurb: { zh: '同一套資料模型換資料庫、換 API 風格時，哪裡會壞？把後端從 MySQL 遷到 PostgreSQL，再加上 Apollo GraphQL。', en: 'What breaks when the same data model moves to another database and API style? I migrated the backend from MySQL to PostgreSQL and added Apollo GraphQL.' },
+      byline: { zh: '團隊專案＋個人延伸', en: 'Team project + solo follow-up' },
+      index: 'PostgreSQL · Apollo GraphQL · Sequelize',
+      tags: ['PostgreSQL', 'Apollo Server', 'Sequelize', 'Mocha / Chai'],
+      panel: {
+        bg: '#DDE3E8',
+        layout: 'code',
+        code: [
+          { label: 'REST · MySQL → PostgreSQL', source: 'GET /api/tweets\nAuthorization: Bearer <jwt>\n\n200 OK\n[{ "id": 1, "UserId": 3, … }]' },
+          { label: 'GraphQL · Apollo Server', source: 'query {\n  tweets {\n    id\n    User { name }\n  }\n}' },
+        ],
+      },
+    },
     iconText: 'GQL',
     oneLiner: { zh: '團隊專案後端的 PostgreSQL 遷移與 GraphQL 改寫。', en: 'A PostgreSQL migration and GraphQL layer for a team project backend.' },
     pain: { zh: '同一套資料模型換資料庫、換 API 風格時，哪些地方會壞？', en: 'What breaks when the same data model moves to another database and API style?' },

@@ -1,187 +1,373 @@
 ---
 import Base from '../layouts/Base.astro';
-import ProjectCard from '../components/ProjectCard.astro';
+import ProjectRow from '../components/ProjectRow.astro';
 import { projects, type Lang } from '../data/projects';
-import { site, t, tx } from '../data/site';
+import { site, t, tx, shortTitle } from '../data/site';
 
 interface Props {
   lang: Lang;
 }
 const { lang } = Astro.props;
-const featured = projects.filter((p) => p.featured);
-const others = projects.filter((p) => !p.featured);
-const { links } = site;
+const liveCount = projects.filter((p) => p.status === 'live').length;
+const statusCode = { live: 'LIVE', 'in-progress': 'WIP', archived: 'ARCHIVE' } as const;
+const yearOf = (period: string) => period.replace(/(\d{4})\.(\d{2}) – \1\.(\d{2})/, '$1.$2–$3');
 ---
 
-<Base lang={lang}>
+<Base lang={lang} wide>
   <section class="hero">
-    <p class="eyebrow">{tx(lang, site.role)}</p>
-    <h1>{lang === 'zh' ? `你好，我是 ${tx(lang, site.name)}。` : `Hi, I'm ${tx(lang, site.name)}.`}</h1>
-    <p class="intro">{tx(lang, site.intro)}</p>
-    <div class="actions">
-      <a class="btn primary" href={links.github} target="_blank" rel="noopener">GitHub</a>
-      {links.resume && <a class="btn" href={links.resume}>{t(lang, 'resume')}</a>}
-      {links.email && <a class="btn" href={`mailto:${links.email}`}>Email</a>}
-    </div>
-  </section>
-
-  <section id="projects">
-    <h2 class="section-title">{t(lang, 'featured')}</h2>
-    <div class="grid two">
-      {featured.map((p) => <ProjectCard lang={lang} project={p} />)}
-    </div>
-
-    {
-      others.length > 0 && (
-        <>
-          <h2 class="section-title sub">{t(lang, 'other')}</h2>
-          <div class="grid two">
-            {others.map((p) => (
-              <ProjectCard lang={lang} project={p} />
-            ))}
-          </div>
-        </>
-      )
-    }
-  </section>
-
-  <section id="skills">
-    <h2 class="section-title">{t(lang, 'skills')}</h2>
-    <dl class="skills">
+    <p class="eyebrow who"><span class="dot"></span>{tx(lang, site.name)} — {tx(lang, site.role)}</p>
+    <h1>
+      <span class="muted">{tx(lang, site.headline.muted)}</span>
+      <span class="strong">{tx(lang, site.headline.strong)}</span>
+    </h1>
+    <dl class="stats">
       {
-        site.skills.map((g) => (
+        site.stats.map((s) => (
           <div>
-            <dt>{tx(lang, g.group)}</dt>
-            <dd>
-              <ul class="tags">
-                {g.items.map((i) => (
-                  <li>{i}</li>
-                ))}
-              </ul>
-            </dd>
+            <dd>{tx(lang, s.value)}</dd>
+            <dt>{tx(lang, s.label)}</dt>
           </div>
         ))
       }
     </dl>
   </section>
 
-  <section id="contact">
-    <h2 class="section-title">{t(lang, 'contact')}</h2>
-    <p class="muted">{t(lang, 'contact_body')}</p>
-    <ul class="contact">
-      <li><span class="mono">github</span><a href={links.github} target="_blank" rel="noopener">{links.github.replace('https://', '')}</a></li>
-      {links.email && <li><span class="mono">email</span><a href={`mailto:${links.email}`}>{links.email}</a></li>}
-      {links.linkedin && <li><span class="mono">linkedin</span><a href={links.linkedin} target="_blank" rel="noopener">LinkedIn</a></li>}
-    </ul>
+  <section id="index" class="index">
+    <div class="label mono">
+      <span>01 / {t(lang, 'index_title')}</span>
+      <span>{projects.length} PROJECTS · {liveCount} LIVE</span>
+    </div>
+    <div class="table" role="table">
+      <div class="thead" role="row">
+        <span role="columnheader">#</span>
+        <span role="columnheader">PROJECT</span>
+        <span role="columnheader" class="c-stack">STACK</span>
+        <span role="columnheader">STATUS</span>
+        <span role="columnheader" class="c-year">YEAR</span>
+        <span class="arrow" aria-hidden="true"></span>
+      </div>
+      {
+        projects.map((p, i) => (
+          <a class="tr" role="row" href={`#${p.slug}`}>
+            <span role="cell" class="num">{String(i + 1).padStart(2, '0')}</span>
+            <span role="cell" class="name">
+              {shortTitle(lang, p.title)}
+              <small>{p.home.index}</small>
+            </span>
+            <span role="cell" class="c-stack">{p.home.index}</span>
+            <span role="cell"><span class:list={['badge', p.status]}>{statusCode[p.status]}</span></span>
+            <span role="cell" class="c-year">{yearOf(p.period)}</span>
+            <span class="arrow" aria-hidden="true">↘</span>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="works">
+    <div class="label mono">
+      <span>02 / {t(lang, 'works_title')}</span>
+      <span class="hint">{t(lang, 'works_hint')}</span>
+    </div>
+    {projects.map((p, i) => <ProjectRow lang={lang} project={p} index={i} />)}
+  </section>
+
+  <section id="experience" class="experience">
+    <div class="label mono"><span>03 / {t(lang, 'experience')}</span></div>
+    <div class="exp-body">
+      <h2>{t(lang, 'experience_heading')}</h2>
+      <ol>
+        {
+          site.experience.map((e) => (
+            <li>
+              <span class="org">
+                {e.org} · {tx(lang, e.role)}
+              </span>
+              <span class="period mono">{tx(lang, e.period)}</span>
+              <span class="note">{tx(lang, e.note)}</span>
+            </li>
+          ))
+        }
+      </ol>
+      <p class="edu">{tx(lang, site.education)}</p>
+    </div>
   </section>
 </Base>
 
 <style>
-  .hero {
-    padding: 72px 0 48px;
-  }
-  h1 {
-    font-size: clamp(32px, 6vw, 48px);
-    margin: 0 0 16px;
-  }
-  .intro {
-    max-width: 640px;
-    font-size: 18px;
-    color: var(--muted);
-    margin: 0 0 28px;
-  }
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  .btn {
-    display: inline-block;
-    padding: 8px 16px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-weight: 500;
-    font-size: 15px;
-  }
-  .btn:hover {
-    text-decoration: none;
-    border-color: var(--text);
-  }
-  .btn.primary {
-    background: var(--text);
-    color: var(--bg);
-    border-color: var(--text);
-  }
   section {
-    scroll-margin-top: 72px;
+    scroll-margin-top: 88px;
   }
-  .section-title {
-    font-size: 14px;
-    font-family: var(--mono);
-    font-weight: 500;
-    color: var(--faint);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin: 56px 0 20px;
+  .label {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .hero {
+    padding: 72px 0 64px;
+  }
+  @media (min-width: 900px) {
+    .hero {
+      padding: 128px 0 96px;
+    }
+  }
+  .who {
     display: flex;
     align-items: center;
     gap: 12px;
+    margin-bottom: 24px;
   }
-  .section-title::after {
-    content: '';
-    flex: 1;
-    border-top: 1px solid var(--border);
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--dot);
   }
-  .section-title.sub {
-    margin-top: 40px;
-  }
-  .grid {
-    display: grid;
-    gap: 16px;
-  }
-  @media (min-width: 720px) {
-    .grid.two {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-  .skills {
-    display: grid;
-    gap: 14px;
+  h1 {
     margin: 0;
+    font-size: clamp(38px, 6.2vw, 84px);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    max-width: 1200px;
   }
-  .skills > div {
+  h1 span {
+    display: block;
+    white-space: pre-line;
+  }
+  h1 .muted {
+    color: var(--faint);
+    opacity: 0.75;
+  }
+  .stats {
     display: grid;
-    gap: 6px;
+    margin: 56px 0 0;
+    border-top: 1px solid var(--border);
+    max-width: 960px;
   }
-  @media (min-width: 720px) {
-    .skills > div {
-      grid-template-columns: 160px 1fr;
-      align-items: center;
-    }
+  .stats div {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
   }
-  .skills dt {
+  .stats dd {
+    margin: 0;
+    font-size: 24px;
     font-weight: 600;
   }
-  .skills dd {
-    margin: 0;
+  .stats dt {
+    color: var(--muted);
+    font-size: 15px;
   }
-  .muted {
+  @media (min-width: 720px) {
+    .stats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 32px;
+      padding-top: 24px;
+    }
+    .stats div {
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 6px;
+      padding: 0;
+      border: 0;
+    }
+    .stats dd {
+      font-size: 36px;
+      letter-spacing: -0.02em;
+    }
+  }
+
+  /* Project index: monospace table, rows invert on hover */
+  .index {
+    padding: 24px 0 112px;
+  }
+  .table {
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 15px;
+  }
+  .thead,
+  .tr {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 0 12px;
+  }
+  .thead {
+    padding-bottom: 12px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+    border-bottom: 1px solid var(--text);
+  }
+  .c-stack,
+  .c-year,
+  .arrow {
+    display: none;
+  }
+  .tr {
+    min-height: 64px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    transition: background 0.12s, color 0.12s;
+  }
+  .tr:hover,
+  .tr:focus-visible {
+    background: var(--invert-bg);
+    color: var(--invert-fg);
+    text-decoration: none;
+    outline: none;
+  }
+  .tr:hover .badge,
+  .tr:focus-visible .badge,
+  .tr:hover .num,
+  .tr:focus-visible .num,
+  .tr:hover small,
+  .tr:focus-visible small {
+    color: var(--invert-muted);
+  }
+  .num {
+    color: var(--faint);
+  }
+  .name {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 0;
+    font-weight: 500;
+    text-transform: uppercase;
+    line-height: 1.4;
+  }
+  .name small {
+    font-size: 11px;
+    font-weight: 400;
+    text-transform: none;
     color: var(--muted);
   }
-  .contact {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    gap: 6px;
+  @media (min-width: 900px) {
+    .thead,
+    .tr {
+      grid-template-columns: 56px 280px minmax(0, 1fr) 130px 150px 24px;
+      gap: 16px;
+      padding: 0 16px;
+    }
+    .c-stack,
+    .c-year,
+    .arrow {
+      display: block;
+    }
+    .name small {
+      display: none;
+    }
+    .c-stack {
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tr:hover .c-stack,
+    .tr:focus-visible .c-stack {
+      color: var(--invert-muted);
+    }
   }
-  .contact li {
+
+  .works {
     display: flex;
-    gap: 16px;
+    flex-direction: column;
+    gap: 72px;
   }
-  .contact .mono {
-    width: 72px;
-    color: var(--faint);
+  @media (min-width: 900px) {
+    .works {
+      gap: 96px;
+    }
+  }
+  .works > .label {
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    margin-bottom: -24px;
+  }
+  @media (max-width: 719px) {
+    .hint {
+      display: none;
+    }
+  }
+
+  .experience {
+    display: grid;
+    gap: 24px;
+    margin-top: 128px;
+  }
+  .experience > .label,
+  .exp-body {
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  @media (min-width: 900px) {
+    .experience {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: 32px;
+    }
+    .experience > .label {
+      grid-column: span 4;
+      align-self: start;
+    }
+    .exp-body {
+      grid-column: span 8;
+    }
+  }
+  .exp-body h2 {
+    margin: 0 0 40px;
+    font-size: clamp(28px, 3.4vw, 48px);
+    line-height: 1.15;
+    white-space: pre-line;
+  }
+  ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 24px;
+    padding: 20px 0;
+    border-top: 1px solid var(--border);
+  }
+  .org {
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .period {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: right;
+    padding-top: 4px;
+  }
+  .note {
+    grid-column: 1 / -1;
+    font-size: 15px;
+    color: var(--muted);
+  }
+  @media (max-width: 599px) {
+    li {
+      grid-template-columns: 1fr;
+    }
+    .period {
+      order: -1;
+      text-align: left;
+      padding: 0;
+    }
+  }
+  .edu {
+    margin: 20px 0 0;
+    font-size: 14px;
+    color: var(--muted);
   }
 </style>

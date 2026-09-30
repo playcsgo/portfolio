@@ -6,10 +6,13 @@ interface Props {
   lang: Lang;
   title?: string;
   description?: string;
+  /** Full-width layout for the home page; project pages keep a reading width */
+  wide?: boolean;
 }
-const { lang, title, description } = Astro.props;
+const { lang, title, description, wide = false } = Astro.props;
 const pageTitle = title ? `${title} · ${tx(lang, site.name)}` : `${tx(lang, site.name)} · ${tx(lang, site.role)}`;
 const path = Astro.url.pathname;
+const { links } = site;
 ---
 
 <!doctype html>
@@ -24,83 +27,128 @@ const path = Astro.url.pathname;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
   </head>
   <body>
     <header class="site-header">
-      <div class="wrap header-inner">
-        <a class="brand" href={href(lang, '/')}>
-          <span class="brand-mark">~/</span>samlu
-        </a>
-        <nav>
-          <a href={href(lang, '/#projects')}>{t(lang, 'nav_projects')}</a>
-          <a href={href(lang, '/#skills')}>{t(lang, 'nav_skills')}</a>
+      <div class="wrap-wide header-inner">
+        <a class="brand" href={href(lang, '/')}>~/samlu</a>
+        <nav class="primary">
+          <a href={href(lang, '/#index')}>{t(lang, 'nav_projects')}</a>
+          <a href={href(lang, '/#experience')}>{t(lang, 'nav_experience')}</a>
           <a href={href(lang, '/#contact')}>{t(lang, 'nav_contact')}</a>
-          <a class="lang" href={altPath(lang, path)} hreflang={lang === 'zh' ? 'en' : 'zh-Hant-TW'}>{t(lang, 'switch_lang')}</a>
         </nav>
+        <div class="pills">
+          <a class="pill" href={altPath(lang, path)} hreflang={lang === 'zh' ? 'en' : 'zh-Hant-TW'}>{t(lang, 'switch_lang')}</a>
+          {links.resume && <a class="pill solid" href={links.resume} target="_blank" rel="noopener">{t(lang, 'resume')} ↗</a>}
+        </div>
       </div>
     </header>
-    <main class="wrap">
+
+    <main class={wide ? 'wrap-wide' : 'wrap'}>
       <slot />
     </main>
-    <footer class="wrap site-footer">
-      <span>© {new Date().getFullYear()} {tx(lang, site.name)}</span>
-      <span>{t(lang, 'footer')}</span>
+
+    <footer id="contact" class="site-footer">
+      <div class="wrap-wide">
+        <div class="footer-top">
+          <div>
+            <p class="eyebrow">{t(lang, 'contact')}</p>
+            <h2>{t(lang, 'contact_body')}</h2>
+          </div>
+          <a class="mail" href={`mailto:${links.email}`}>{links.email} ↗</a>
+        </div>
+        <div class="footer-bottom">
+          <span>© {new Date().getFullYear()} {tx(lang, site.name)} · {t(lang, 'footer')}</span>
+          <div>
+            <a href={links.github} target="_blank" rel="noopener">GitHub ↗</a>
+            {links.linkedin && <a href={links.linkedin} target="_blank" rel="noopener">LinkedIn ↗</a>}
+            {links.resume && <a href={links.resume} target="_blank" rel="noopener">{t(lang, 'resume')} ↗</a>}
+          </div>
+        </div>
+      </div>
     </footer>
   </body>
 </html>
 
 <style is:global>
   :root {
-    --bg: #fbfbf9;
-    --surface: #ffffff;
-    --surface-2: #f3f3ef;
-    --text: #1b1d1f;
-    --muted: #5d6166;
-    --faint: #8a8e93;
-    --border: #e3e3dd;
-    --accent: #0f766e;
-    --accent-soft: #e2f3f0;
-    --warn: #b45309;
-    --warn-soft: #fdf1e2;
-    --radius: 8px;
+    --bg: #f4f3ef;
+    --surface: #fbfaf7;
+    --surface-2: #ebeae4;
+    --text: #141414;
+    --body: #3d3b35;
+    --muted: #5a5850;
+    --faint: #6b685f;
+    --border: #dad8d0;
+    --border-strong: #c9c6bc;
+    --accent: #b8430f;
+    --accent-soft: #f6e3d8;
+    --dot: #e2571c;
+    --warn: #a15c07;
+    --warn-soft: #f6ebd9;
+    --invert-bg: #141414;
+    --invert-fg: #f4f3ef;
+    --invert-muted: #c9c6bc;
+    --footer-bg: #141414;
+    --footer-fg: #f4f3ef;
+    --footer-muted: #a29e93;
+    --radius: 10px;
     --shadow-sm: 0 1px 1px #00000005, 0 2px 2px #0000000a;
     --shadow-md: 0 2px 2px #0000000a, 0 8px 16px -4px #0000000f;
     --shadow-lg: 0 1px 1px #00000005, 0 8px 16px -4px #0000000a, 0 24px 32px -8px #00000014;
-    --sans: 'IBM Plex Sans', 'Noto Sans TC', system-ui, sans-serif;
-    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --sans: 'Geist', 'Noto Sans TC', system-ui, sans-serif;
+    --mono: 'Geist Mono', ui-monospace, monospace;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']) {
-      --bg: #111315;
-      --surface: #181b1e;
-      --surface-2: #1f2327;
-      --text: #e8e9ea;
-      --muted: #a4a9ae;
-      --faint: #767b81;
-      --border: #2b3035;
-      --accent: #4fd1c0;
-      --accent-soft: #15302d;
+      --bg: #121211;
+      --surface: #1a1917;
+      --surface-2: #22211e;
+      --text: #edebe4;
+      --body: #cfccc3;
+      --muted: #a9a69c;
+      --faint: #8c897f;
+      --border: #2c2b27;
+      --border-strong: #3d3b36;
+      --accent: #f08a4b;
+      --accent-soft: #3a2416;
+      --dot: #f06a2e;
       --warn: #f0a94b;
       --warn-soft: #34270f;
+      --invert-bg: #edebe4;
+      --invert-fg: #121211;
+      --invert-muted: #5a5850;
+      --footer-bg: #0a0a09;
+      --footer-fg: #edebe4;
+      --footer-muted: #8c897f;
       color-scheme: dark;
     }
   }
   :root[data-theme='dark'] {
-    --bg: #111315;
-    --surface: #181b1e;
-    --surface-2: #1f2327;
-    --text: #e8e9ea;
-    --muted: #a4a9ae;
-    --faint: #767b81;
-    --border: #2b3035;
-    --accent: #4fd1c0;
-    --accent-soft: #15302d;
+    --bg: #121211;
+    --surface: #1a1917;
+    --surface-2: #22211e;
+    --text: #edebe4;
+    --body: #cfccc3;
+    --muted: #a9a69c;
+    --faint: #8c897f;
+    --border: #2c2b27;
+    --border-strong: #3d3b36;
+    --accent: #f08a4b;
+    --accent-soft: #3a2416;
+    --dot: #f06a2e;
     --warn: #f0a94b;
     --warn-soft: #34270f;
+    --invert-bg: #edebe4;
+    --invert-fg: #121211;
+    --invert-muted: #5a5850;
+    --footer-bg: #0a0a09;
+    --footer-fg: #edebe4;
+    --footer-muted: #8c897f;
     color-scheme: dark;
   }
 
@@ -132,12 +180,12 @@ const path = Astro.url.pathname;
   h1,
   h2,
   h3 {
-    line-height: 1.25;
+    line-height: 1.2;
     font-weight: 600;
   }
   /* Tighten tracking on English headings only; CJK glyphs crowd when tracked negatively */
   :lang(en) h1 {
-    letter-spacing: -0.04em;
+    letter-spacing: -0.035em;
   }
   :lang(en) h2,
   :lang(en) h3 {
@@ -148,14 +196,26 @@ const path = Astro.url.pathname;
     font-family: var(--mono);
     font-size: 0.86em;
   }
-  .wrap {
-    max-width: 960px;
+  .wrap,
+  .wrap-wide {
     margin: 0 auto;
-    padding: 0 16px;
+    padding: 0 20px;
+  }
+  .wrap {
+    max-width: 1000px;
+  }
+  .wrap-wide {
+    max-width: 1440px;
   }
   @media (min-width: 720px) {
-    .wrap {
-      padding: 0 32px;
+    .wrap,
+    .wrap-wide {
+      padding: 0 40px;
+    }
+  }
+  @media (min-width: 1100px) {
+    .wrap-wide {
+      padding: 0 80px;
     }
   }
 
@@ -163,7 +223,7 @@ const path = Astro.url.pathname;
     position: sticky;
     top: 0;
     z-index: 10;
-    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
   }
@@ -171,60 +231,114 @@ const path = Astro.url.pathname;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 56px;
+    height: 72px;
     gap: 16px;
   }
   .brand {
     font-family: var(--mono);
     font-weight: 500;
+    font-size: 15px;
     color: var(--text);
   }
-  .brand-mark {
-    color: var(--accent);
-  }
-  .site-header nav {
-    display: flex;
-    gap: 18px;
-    font-size: 14px;
-  }
-  .site-header nav a {
-    color: var(--muted);
-  }
-  .site-header nav a:hover {
-    color: var(--text);
+  .site-header a:hover {
     text-decoration: none;
   }
-  .site-header nav .lang {
-    font-family: var(--mono);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 0 8px;
+  .primary {
+    display: none;
+    gap: 40px;
+    font-size: 15px;
+  }
+  .primary a {
     color: var(--text);
   }
-  @media (max-width: 480px) {
-    .site-header nav a:not(.lang):not(:first-child) {
-      display: none;
+  .primary a:hover {
+    color: var(--muted);
+  }
+  @media (min-width: 720px) {
+    .primary {
+      display: flex;
     }
+  }
+  .pills {
+    display: flex;
+    gap: 8px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+  }
+  .pill:hover {
+    border-color: var(--text);
+  }
+  .pill.solid {
+    background: var(--invert-bg);
+    border-color: var(--invert-bg);
+    color: var(--invert-fg);
   }
 
   .site-footer {
+    margin-top: 128px;
+    padding: 96px 0 40px;
+    background: var(--footer-bg);
+    color: var(--footer-fg);
+  }
+  .site-footer .eyebrow {
+    color: var(--footer-muted);
+  }
+  .footer-top {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
-    gap: 16px;
-    margin-top: 96px;
+    align-items: flex-end;
+    gap: 32px 48px;
+  }
+  .footer-top h2 {
+    margin: 0;
+    font-size: clamp(36px, 6vw, 72px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+  .site-footer a {
+    color: var(--footer-fg);
+  }
+  .mail {
+    font-size: clamp(18px, 2vw, 24px);
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--footer-fg);
+  }
+  .site-footer .mail:hover {
+    text-decoration: none;
+    opacity: 0.8;
+  }
+  .footer-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 16px 32px;
+    margin-top: 72px;
     padding-top: 24px;
-    padding-bottom: 40px;
-    border-top: 1px solid var(--border);
-    color: var(--faint);
+    border-top: 1px solid color-mix(in srgb, var(--footer-fg) 20%, transparent);
+    font-family: var(--mono);
     font-size: 13px;
+    color: var(--footer-muted);
+  }
+  .footer-bottom div {
+    display: flex;
+    gap: 32px;
   }
 
   .eyebrow {
     font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--faint);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    color: var(--muted);
     margin: 0 0 12px;
   }
   .tags {
@@ -238,35 +352,35 @@ const path = Astro.url.pathname;
   .tags li {
     font-family: var(--mono);
     font-size: 12px;
-    padding: 2px 8px;
+    padding: 4px 10px;
     border-radius: 6px;
-    background: var(--surface-2);
-    color: var(--muted);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
   }
   .badge {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-family: var(--mono);
     font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     color: var(--muted);
     white-space: nowrap;
   }
   .badge::before {
     content: '';
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
-    background: var(--faint);
+    border: 1px solid var(--faint);
   }
   .badge.live::before {
-    background: var(--accent);
+    background: var(--dot);
+    border-color: var(--dot);
   }
   .badge.in-progress::before {
     background: var(--warn);
+    border-color: var(--warn);
   }
 </style>

@@ -1,0 +1,221 @@
+---
+import { Image } from 'astro:assets';
+import type { Lang, Project } from '../data/projects';
+import { t, tx, href, shortTitle } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  project: Project;
+  index: number;
+}
+const { lang, project: p, index } = Astro.props;
+const url = href(lang, `/${p.slug}/`);
+const external = p.links[0];
+const externalHref = external && (typeof external.href === 'string' ? external.href : tx(lang, external.href));
+const externalLabel = external && tx(lang, external.label).replace(/^(官網|Website) /, '');
+const { panel } = p.home;
+const shots = (panel.shots ?? []).map((i) => p.shots![i]);
+const num = String(index + 1).padStart(2, '0');
+---
+
+<article id={p.slug} class="row">
+  <div class="text">
+    <p class="meta mono">{num} · {p.period} · {tx(lang, p.home.byline)}</p>
+    <h2><a href={url}>{shortTitle(lang, p.title)}</a></h2>
+    <p class="blurb">{tx(lang, p.home.blurb)}</p>
+    <ul class="tags">{p.home.tags.map((s) => <li>{s}</li>)}</ul>
+    <div class="links">
+      <a class="case" href={url}>{t(lang, 'view_case')} →</a>
+      {externalHref && <a class="ext" href={externalHref} target="_blank" rel="noopener">{externalLabel} ↗</a>}
+    </div>
+  </div>
+
+  <a class:list={['panel', panel.layout]} href={url} style={`--panel:${panel.bg}`} tabindex="-1" aria-hidden="true">
+    {
+      shots.map((s) => (
+        <Image src={s.src[lang]} alt="" widths={[480, 800, 1200, 1600]} sizes="(min-width: 1100px) 840px, 100vw" format="webp" quality={80} loading="lazy" />
+      ))
+    }
+    {
+      panel.code && (
+        <div class="windows">
+          {panel.code.map((c) => (
+            <div class="win">
+              <div class="bar">{c.label}</div>
+              <pre>{c.source}</pre>
+            </div>
+          ))}
+        </div>
+      )
+    }
+  </a>
+</article>
+
+<style>
+  .row {
+    display: grid;
+    gap: 24px;
+    scroll-margin-top: 96px;
+  }
+  @media (min-width: 900px) {
+    .row {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: 32px;
+    }
+    .text {
+      grid-column: span 4;
+      padding-top: 8px;
+    }
+    .panel {
+      grid-column: span 8;
+    }
+  }
+  .text {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .meta {
+    margin: 0;
+    font-size: 13px;
+    color: var(--faint);
+  }
+  h2 {
+    margin: 0;
+    font-size: clamp(28px, 3vw, 40px);
+    line-height: 1.1;
+  }
+  h2 a {
+    color: var(--text);
+  }
+  .blurb {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--body);
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 24px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .links a {
+    padding: 10px 0 2px;
+  }
+  .case {
+    color: var(--text);
+    border-bottom: 1px solid var(--text);
+  }
+  .ext {
+    color: var(--muted);
+  }
+  .links a:hover {
+    text-decoration: none;
+    color: var(--muted);
+  }
+
+  /* Image panel: each project has its own tinted background */
+  .panel {
+    order: -1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 260px;
+    padding: 24px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--panel);
+  }
+  /* Pale panels would glare in dark mode; blend every panel toward the page background */
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .panel {
+      background: color-mix(in srgb, var(--panel) 45%, var(--bg));
+    }
+  }
+  :global(:root[data-theme='dark']) .panel {
+    background: color-mix(in srgb, var(--panel) 45%, var(--bg));
+  }
+  @media (min-width: 900px) {
+    .panel {
+      order: 0;
+      height: 580px;
+      padding: 48px;
+    }
+  }
+  .panel img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    transition: transform 0.4s ease;
+  }
+  .panel:hover img {
+    transform: translateY(-4px);
+  }
+  .frame img {
+    max-height: 100%;
+    width: auto;
+    border-radius: 10px;
+    box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);
+  }
+  .bleed {
+    padding: 0;
+  }
+  .bleed img {
+    width: 100%;
+    max-width: 820px;
+  }
+  .pair {
+    gap: 20px;
+    align-items: flex-start;
+  }
+  .pair img {
+    width: 46%;
+    border-radius: 12px;
+    box-shadow: 0 24px 48px rgb(60 40 20 / 0.22);
+  }
+  .pair img:nth-child(2) {
+    margin-top: 12%;
+  }
+  .windows {
+    display: grid;
+    gap: 16px;
+    width: 100%;
+  }
+  @media (min-width: 600px) {
+    .windows {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .win {
+    min-width: 0;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #141414;
+    color: #e8e6df;
+    font-family: var(--mono);
+  }
+  .bar {
+    padding: 10px 16px;
+    border-bottom: 1px solid #2e2e2e;
+    font-size: 12px;
+    color: #9a978e;
+  }
+  .win pre {
+    margin: 0;
+    padding: 16px 20px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  @media (max-width: 599px) {
+    .win:first-child {
+      display: none;
+    }
+  }
+</style>
