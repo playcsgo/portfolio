@@ -48,14 +48,15 @@ const { links } = site;
           <a href={href(lang, '/#contact')}>{t(lang, 'nav_contact')}</a>
         </nav>
         <div class="pills">
-          <button class="pill icon theme-toggle" type="button" aria-label={lang === 'zh' ? '切換日夜模式' : 'Toggle dark mode'}>
-            <svg class="sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="4"></circle>
-              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
-            </svg>
-            <svg class="moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path>
-            </svg>
+          <button class="theme-switch" type="button" role="switch" aria-checked="false" aria-label={lang === 'zh' ? '深色模式' : 'Dark mode'}>
+            <span class="track">
+              <svg class="sun" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+              <svg class="moon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg>
+              <span class="knob">
+                <svg class="sun" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+                <svg class="moon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg>
+              </span>
+            </span>
           </button>
           <a class="pill" href={altPath(lang, path)} hreflang={lang === 'zh' ? 'en' : 'zh-Hant-TW'}>{t(lang, 'switch_lang')}</a>
           {links.resume && <a class="pill solid" href={links.resume} target="_blank" rel="noopener">{t(lang, 'resume')} ↗</a>}
@@ -87,14 +88,21 @@ const { links } = site;
       </div>
     </footer>
     <script is:inline>
-      document.querySelector('.theme-toggle').addEventListener('click', () => {
+      (() => {
         const root = document.documentElement;
-        const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-        root.dataset.theme = dark ? 'light' : 'dark';
-        try {
-          localStorage.setItem('theme', root.dataset.theme);
-        } catch {}
-      });
+        const btn = document.querySelector('.theme-switch');
+        const isDark = () => (root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
+        const sync = () => btn.setAttribute('aria-checked', String(isDark()));
+        sync();
+        matchMedia('(prefers-color-scheme: dark)').addEventListener('change', sync);
+        btn.addEventListener('click', () => {
+          root.dataset.theme = isDark() ? 'light' : 'dark';
+          sync();
+          try {
+            localStorage.setItem('theme', root.dataset.theme);
+          } catch {}
+        });
+      })();
     </script>
   </body>
 </html>
@@ -303,30 +311,85 @@ const { links } = site;
   .pill:hover {
     border-color: var(--text);
   }
-  .pill.icon {
-    width: 44px;
-    padding: 0;
-    justify-content: center;
+  /* Slider switch: knob on the left with a sun in light mode, slides right with a moon in dark mode */
+  .theme-switch {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 4px;
+    border: 0;
     background: none;
     cursor: pointer;
+    color: var(--text);
   }
-  /* Show the icon of the mode you would switch to */
-  .theme-toggle .sun {
+  .track {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 60px;
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--faint);
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .theme-switch:hover .track {
+    border-color: var(--text);
+  }
+  .theme-switch:focus-visible {
+    outline: none;
+  }
+  .theme-switch:focus-visible .track {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--invert-bg);
+    color: var(--invert-fg);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    transition: transform 0.25s cubic-bezier(0.3, 0.7, 0.4, 1);
+  }
+  .knob svg {
+    grid-area: 1 / 1;
+  }
+  .knob .moon {
     display: none;
   }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme='light']) .theme-toggle .sun {
-      display: block;
+    :root:not([data-theme='light']) .knob {
+      transform: translateX(28px);
     }
-    :root:not([data-theme='light']) .theme-toggle .moon {
+    :root:not([data-theme='light']) .knob .sun {
       display: none;
     }
+    :root:not([data-theme='light']) .knob .moon {
+      display: block;
+    }
   }
-  :root[data-theme='dark'] .theme-toggle .sun {
+  :root[data-theme='dark'] .knob {
+    transform: translateX(28px);
+  }
+  :root[data-theme='dark'] .knob .sun {
+    display: none;
+  }
+  :root[data-theme='dark'] .knob .moon {
     display: block;
   }
-  :root[data-theme='dark'] .theme-toggle .moon {
-    display: none;
+  @media (prefers-reduced-motion: reduce) {
+    .knob {
+      transition: none;
+    }
   }
   .pill.solid {
     background: var(--invert-bg);
