@@ -1,0 +1,187 @@
+---
+import Base from '../layouts/Base.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { projects, type Lang } from '../data/projects';
+import { site, t, tx } from '../data/site';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const featured = projects.filter((p) => p.featured);
+const others = projects.filter((p) => !p.featured);
+const { links } = site;
+---
+
+<Base lang={lang}>
+  <section class="hero">
+    <p class="eyebrow">{tx(lang, site.role)}</p>
+    <h1>{lang === 'zh' ? `你好，我是 ${tx(lang, site.name)}。` : `Hi, I'm ${tx(lang, site.name)}.`}</h1>
+    <p class="intro">{tx(lang, site.intro)}</p>
+    <div class="actions">
+      <a class="btn primary" href={links.github} target="_blank" rel="noopener">GitHub</a>
+      {links.resume && <a class="btn" href={links.resume}>{t(lang, 'resume')}</a>}
+      {links.email && <a class="btn" href={`mailto:${links.email}`}>Email</a>}
+    </div>
+  </section>
+
+  <section id="projects">
+    <h2 class="section-title">{t(lang, 'featured')}</h2>
+    <div class="grid two">
+      {featured.map((p) => <ProjectCard lang={lang} project={p} />)}
+    </div>
+
+    {
+      others.length > 0 && (
+        <>
+          <h2 class="section-title sub">{t(lang, 'other')}</h2>
+          <div class="grid two">
+            {others.map((p) => (
+              <ProjectCard lang={lang} project={p} />
+            ))}
+          </div>
+        </>
+      )
+    }
+  </section>
+
+  <section id="skills">
+    <h2 class="section-title">{t(lang, 'skills')}</h2>
+    <dl class="skills">
+      {
+        site.skills.map((g) => (
+          <div>
+            <dt>{tx(lang, g.group)}</dt>
+            <dd>
+              <ul class="tags">
+                {g.items.map((i) => (
+                  <li>{i}</li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        ))
+      }
+    </dl>
+  </section>
+
+  <section id="contact">
+    <h2 class="section-title">{t(lang, 'contact')}</h2>
+    <p class="muted">{t(lang, 'contact_body')}</p>
+    <ul class="contact">
+      <li><span class="mono">github</span><a href={links.github} target="_blank" rel="noopener">{links.github.replace('https://', '')}</a></li>
+      {links.email && <li><span class="mono">email</span><a href={`mailto:${links.email}`}>{links.email}</a></li>}
+      {links.linkedin && <li><span class="mono">linkedin</span><a href={links.linkedin} target="_blank" rel="noopener">LinkedIn</a></li>}
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .hero {
+    padding: 72px 0 48px;
+  }
+  h1 {
+    font-size: clamp(32px, 6vw, 48px);
+    margin: 0 0 16px;
+  }
+  .intro {
+    max-width: 640px;
+    font-size: 18px;
+    color: var(--muted);
+    margin: 0 0 28px;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-weight: 500;
+    font-size: 15px;
+  }
+  .btn:hover {
+    text-decoration: none;
+    border-color: var(--text);
+  }
+  .btn.primary {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+  section {
+    scroll-margin-top: 72px;
+  }
+  .section-title {
+    font-size: 14px;
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 56px 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--border);
+  }
+  .section-title.sub {
+    margin-top: 40px;
+  }
+  .grid {
+    display: grid;
+    gap: 16px;
+  }
+  @media (min-width: 720px) {
+    .grid.two {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .skills {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+  }
+  .skills > div {
+    display: grid;
+    gap: 6px;
+  }
+  @media (min-width: 720px) {
+    .skills > div {
+      grid-template-columns: 160px 1fr;
+      align-items: center;
+    }
+  }
+  .skills dt {
+    font-weight: 600;
+  }
+  .skills dd {
+    margin: 0;
+  }
+  .muted {
+    color: var(--muted);
+  }
+  .contact {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+  }
+  .contact li {
+    display: flex;
+    gap: 16px;
+  }
+  .contact .mono {
+    width: 72px;
+    color: var(--faint);
+  }
+</style>

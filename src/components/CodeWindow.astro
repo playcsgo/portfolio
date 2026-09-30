@@ -1,0 +1,76 @@
+---
+import { Code } from 'astro:components';
+import type { CodeSample, Lang } from '../data/projects';
+import { tx } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  code: CodeSample;
+}
+const { lang, code } = Astro.props;
+---
+
+<figure class="code-window">
+  <div class="bar">
+    <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="file mono">{code.file}</span>
+  </div>
+  <Code code={code.source} lang={code.lang as any} themes={{ light: 'github-light', dark: 'github-dark' }} defaultColor={false} />
+  <figcaption>{tx(lang, code.caption)}</figcaption>
+</figure>
+
+<style>
+  .code-window {
+    margin: 0;
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    background: var(--surface-2);
+  }
+  .dots {
+    display: flex;
+    gap: 6px;
+  }
+  .dots i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+  .file {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .code-window :global(pre) {
+    margin: 0;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: 0 0 8px 8px;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+    background: var(--surface) !important;
+  }
+  .code-window :global(pre span) {
+    color: var(--shiki-light);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .code-window :global(pre span) {
+      color: var(--shiki-dark);
+    }
+  }
+  :root[data-theme='dark'] .code-window :global(pre span) {
+    color: var(--shiki-dark);
+  }
+  figcaption {
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+</style>

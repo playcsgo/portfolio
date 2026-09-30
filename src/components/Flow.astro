@@ -1,0 +1,106 @@
+---
+import type { Lang, Project } from '../data/projects';
+import { t, tx } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  flow: NonNullable<Project['flow']>;
+}
+const { lang, flow } = Astro.props;
+---
+
+<figure class="flow">
+  <figcaption class="eyebrow">{tx(lang, flow.title)}</figcaption>
+  <ol>
+    {
+      flow.steps.map((s, i) => (
+        <li class:list={{ planned: s.planned }}>
+          <span class="n mono">{String(i + 1).padStart(2, '0')}</span>
+          <div>
+            <strong>
+              {tx(lang, s.label)}
+              {s.planned && <span class="tag-planned mono">{t(lang, 'planned')}</span>}
+            </strong>
+            {s.detail && <span class="detail">{tx(lang, s.detail)}</span>}
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+  {flow.note && <p class="note">{tx(lang, flow.note)}</p>}
+</figure>
+
+<style>
+  .flow {
+    margin: 0;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+  }
+  li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 12px;
+    padding: 10px 0;
+  }
+  li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 42px;
+    bottom: -10px;
+    border-left: 2px solid var(--border);
+  }
+  li:has(+ .planned)::after {
+    border-left-style: dashed;
+  }
+  .n {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .planned .n {
+    background: transparent;
+    border: 2px dashed var(--warn);
+    color: var(--warn);
+  }
+  strong {
+    display: block;
+    font-weight: 600;
+  }
+  .detail {
+    display: block;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .tag-planned {
+    margin-left: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    vertical-align: 2px;
+  }
+  .note {
+    margin: 12px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 14px;
+  }
+</style>

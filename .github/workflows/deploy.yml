@@ -1,0 +1,60 @@
+# Build the site and publish dist/ into the landing page repo's portfolio/ folder.
+# Cloudflare Pages redeploys agilenpi.com when that repo receives the push.
+name: Deploy to agilenpi.com/portfolio
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never run two deploys at once; they would race on the landing page push
+concurrency:
+  group: deploy-portfolio
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # Always the latest landing page, so other folders (mes_demo/, stories/ ...) are never overwritten
+      - uses: actions/checkout@v4
+        with:
+          repository: playcsgo/agilenpi_landing_page
+          ref: main
+          token: ${{ secrets.LANDING_PAGE_TOKEN }}
+          path: landing
+
+      # --delete only applies inside portfolio/, so removed pages disappear without touching the rest of the site
+      - run: rsync -a --delete dist/ landing/portfolio/
+
+      - name: Commit and push
+        working-directory: landing
+        run: |
+          git add portfolio
+          if git diff --cached --quiet; then
+            echo "portfolio/ unchanged, nothing to deploy"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "portfolio: deploy ${GITHUB_SHA::7}" -m "From ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+          # The landing page may get its own commits meanwhile; rebase and retry
+          for i in 1 2 3; do
+            git push origin HEAD:main && exit 0
+            git pull --rebase origin main
+          done
+          exit 1
