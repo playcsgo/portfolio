@@ -1,0 +1,50 @@
+---
+import type { ArchBox, Lang } from '../data/projects';
+import { tx } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  box: ArchBox;
+}
+const { lang, box } = Astro.props;
+---
+
+<div class="box">
+  <strong>{tx(lang, box.name)}</strong>
+  <ul>{box.tech.map((s) => <li class="mono">{s}</li>)}</ul>
+  {box.note && <p>{tx(lang, box.note)}</p>}
+</div>
+
+<style>
+  .box {
+    padding: 16px 18px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  strong {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--surface-2);
+    font-size: 12px;
+    color: var(--body);
+  }
+  p {
+    margin: 10px 0 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+</style>

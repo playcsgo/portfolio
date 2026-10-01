@@ -1,0 +1,104 @@
+---
+import type { Architecture, Lang } from '../data/projects';
+import Box from './ArchBox.astro';
+import { t, tx } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  arch: Architecture;
+}
+const { lang, arch } = Astro.props;
+const circled = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'];
+---
+
+<figure class="arch">
+  <ol class="path">
+    {
+      arch.path.map(({ box, step }, i) => (
+        <li>
+          <Box box={box} lang={lang} />
+          {step && (
+            <p class="step">
+              <span class="n mono">{circled[i]}</span>
+              {tx(lang, step)}
+            </p>
+          )}
+        </li>
+      ))
+    }
+  </ol>
+  <div class="side">
+    <p class="eyebrow">{t(lang, 'side_systems')}</p>
+    {arch.side.map((box) => <Box box={box} lang={lang} />)}
+  </div>
+</figure>
+
+
+<style>
+  .arch {
+    display: grid;
+    gap: 32px;
+    margin: 0;
+  }
+  @media (min-width: 820px) {
+    .arch {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: 40px;
+      align-items: start;
+    }
+  }
+  .path {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* Arrow between boxes: a vertical rule with the step number and what happens */
+  .step {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 14px 0 14px 40px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .step::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    border-left: 2px solid var(--border-strong);
+  }
+  .step::after {
+    content: '';
+    position: absolute;
+    left: 11px;
+    bottom: 0;
+    border: 5px solid transparent;
+    border-top-color: var(--border-strong);
+    border-bottom: 0;
+  }
+  .n {
+    position: absolute;
+    left: 4px;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg);
+    color: var(--accent);
+    font-size: 15px;
+    z-index: 1;
+  }
+  .side {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .side .eyebrow {
+    margin: 0;
+  }
+</style>

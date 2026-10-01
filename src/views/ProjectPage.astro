@@ -4,6 +4,7 @@ import Flow from '../components/Flow.astro';
 import Screenshot from '../components/Screenshot.astro';
 import CodeWindow from '../components/CodeWindow.astro';
 import ProjectPanel from '../components/ProjectPanel.astro';
+import Architecture from '../components/Architecture.astro';
 import type { Lang, Project } from '../data/projects';
 import { t, tx, href } from '../data/site';
 
@@ -23,6 +24,7 @@ const { lang, project: p } = Astro.props;
     <div class="meta">
       <span class="mono">{p.period}</span>
       <span class:list={['badge', p.status]}>{t(lang, `status_${p.status}`)}</span>
+      {p.credit && <span>{tx(lang, p.credit)}</span>}
     </div>
     <h1>{tx(lang, p.title)}</h1>
     <p class="lede">{tx(lang, p.tagline)}</p>
@@ -49,6 +51,8 @@ const { lang, project: p } = Astro.props;
     )
   }
 
+  {
+    !p.architecture && (
   <dl class="facts">
     <div>
       <dt class="eyebrow">{t(lang, 'role')}</dt>
@@ -59,6 +63,8 @@ const { lang, project: p } = Astro.props;
       <dd><ul class="tags">{p.stack.map((s) => <li>{s}</li>)}</ul></dd>
     </div>
   </dl>
+    )
+  }
 
   {
     p.stats && (
@@ -73,15 +79,28 @@ const { lang, project: p } = Astro.props;
     )
   }
 
-  <section>
-    <h2>{t(lang, 'problem')}</h2>
-    <p>{tx(lang, p.problem)}</p>
-  </section>
+  {
+    p.problem && (
+      <section>
+        <h2>{t(lang, 'problem')}</h2>
+        <p>{tx(lang, p.problem)}</p>
+      </section>
+    )
+  }
+
+  {
+    p.architecture && (
+      <section>
+        <h2>{t(lang, 'architecture')}</h2>
+        <Architecture lang={lang} arch={p.architecture} />
+      </section>
+    )
+  }
 
   {p.flow && <section><Flow lang={lang} flow={p.flow} /></section>}
 
   <section>
-    <h2>{t(lang, 'highlights')}</h2>
+    <h2>{t(lang, p.architecture ? 'answers' : 'highlights')}</h2>
     <div class="highlights">
       {
         p.highlights.map((h, i) => (

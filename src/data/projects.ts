@@ -53,6 +53,18 @@ export interface CodeSample {
   source: string;
 }
 
+export interface ArchBox {
+  name: L;
+  tech: string[];
+  note?: L;
+}
+
+/** System diagram: the request path top to bottom, numbered steps on the arrows, plus side systems */
+export interface Architecture {
+  path: { box: ArchBox; step?: L }[];
+  side: ArchBox[];
+}
+
 export interface Project {
   slug: string;
   featured: boolean;
@@ -86,7 +98,11 @@ export interface Project {
   links: { label: L; href: string | L }[];
   shots?: Shot[];
   code?: CodeSample;
-  problem: L;
+  problem?: L;
+  /** Shown after the period, e.g. who built it and with which tools */
+  credit?: L;
+  /** Replaces the role/stack facts and the flow with one system diagram */
+  architecture?: Architecture;
   flow?: { title: L; steps: FlowStep[]; note?: L };
   highlights: Highlight[];
   learned?: L[];
@@ -180,69 +196,79 @@ export const projects: Project[] = [
         caption: { zh: '方案決定點數額度、字數上限與群組人數，全部由 server 端裁決', en: 'Plans set credit quota, length caps and group size, all enforced server-side' },
       },
     ],
-    problem: {
-      zh: '看完一支長影片或一份文件，隔天就忘了大半。Yoution 讓使用者貼上網址或上傳檔案，背景產生分段綱要、圖表與測驗，並用間隔複習與掌握度追蹤幫助記憶。後端的難題在於：LLM 呼叫又慢又貴、供應商會限流，而且付費功能必須防止被濫用。',
-      en: 'People forget most of a long video or document by the next day. Yoution lets users paste a link or upload a file, then generates a sectioned outline, diagrams and a quiz in the background, with spaced review and mastery tracking. The backend challenge: LLM calls are slow, expensive and rate-limited by providers, and paid features must be abuse-proof.',
-    },
-    flow: {
-      title: { zh: '產生流程', en: 'Generation pipeline' },
-      steps: [
-        { label: { zh: '使用者送出內容', en: 'User submits content' }, detail: { zh: '文字／網址／YouTube／PDF・docx・pptx', en: 'text / URL / YouTube / PDF·docx·pptx' } },
-        { label: { zh: 'Server 端檢查', en: 'Server-side checks' }, detail: { zh: 'Zod 驗證・字數上限・分桶 rate limit', en: 'Zod validation · length cap · bucketed rate limit' } },
-        { label: { zh: 'Postgres 原子預扣點數', en: 'Atomic credit hold in Postgres' }, detail: { zh: '先扣再呼叫 LLM', en: 'hold before calling the LLM' } },
-        { label: { zh: '寫入產生佇列，立即回應', en: 'Enqueue job, respond immediately' }, detail: { zh: '使用者可以關掉分頁', en: 'user can close the tab' } },
-        { label: { zh: 'pg_cron + pg_net 觸發 worker', en: 'pg_cron + pg_net trigger worker' }, detail: { zh: 'provider router 挑選可用的 LLM', en: 'provider router picks an available LLM' } },
-        { label: { zh: '結算點數＋通知', en: 'True-up credits + notify' }, detail: { zh: '失敗全額退回・站內通知／推播', en: 'full refund on failure · in-app / push' } },
+    credit: { zh: '獨立開發（以 Claude Code 協作）', en: 'Solo, built with Claude Code as a pair programmer' },
+    architecture: {
+      path: [
+        {
+          box: { name: { zh: '用戶端', en: 'Clients' }, tech: ['Web (Next.js)', 'iOS / Android (Capacitor)', 'Chrome Extension'] },
+          step: { zh: '送出文字、網址、YouTube 或檔案', en: 'Submit text, a URL, a YouTube link or a file' },
+        },
+        {
+          box: { name: { zh: 'API', en: 'API' }, tech: ['Next.js 15 Route Handlers', 'Zod'], note: { zh: '驗證、字數上限、分桶限流', en: 'Validation, length caps, bucketed rate limits' } },
+          step: { zh: '原子預扣點數、寫入佇列，立即回應', en: 'Hold credits atomically, enqueue, respond at once' },
+        },
+        {
+          box: { name: { zh: '資料庫', en: 'Database' }, tech: ['PostgreSQL (Supabase)', 'RLS', 'Migrations'], note: { zh: '點數錢包、產生佇列、訂閱狀態', en: 'Credit wallet, generation queue, subscription state' } },
+          step: { zh: 'pg_cron + pg_net 定期觸發 worker', en: 'pg_cron + pg_net trigger the worker' },
+        },
+        {
+          box: {
+            name: { zh: '產生 worker', en: 'Generation worker' },
+            tech: ['Vercel AI SDK', 'Anthropic', 'OpenAI', 'Gemini', 'Groq', 'Cerebras', 'DeepSeek'],
+            note: { zh: '供應商路由與斷路器；無字幕影片交給 Gemini 直接讀', en: 'Provider routing with a circuit breaker; caption-less videos go to Gemini directly' },
+          },
+          step: { zh: '完成就結算點數，失敗全額退回', en: 'True up credits on success, refund in full on failure' },
+        },
+        { box: { name: { zh: '通知', en: 'Notifications' }, tech: ['Web Push', 'Capacitor Push', 'Resend'] } },
+      ],
+      side: [
+        { name: { zh: '金流', en: 'Billing' }, tech: ['Stripe', 'RevenueCat'], note: { zh: 'Web 與 App 兩邊都用 webhook 回寫同一份訂閱狀態', en: 'Web and app purchases both write one subscription state via webhooks' } },
+        { name: { zh: '後台管理', en: 'Admin back office' }, tech: ['Next.js'], note: { zh: '健康檢查、限流面板、log、會員與兌換碼管理', en: 'Health checks, rate-limit panel, logs, members and redeem codes' } },
+        { name: { zh: '測試與部署', en: 'Testing and deployment' }, tech: ['Vitest', 'Playwright', 'PGlite', 'Vercel', 'Codemagic'] },
       ],
     },
     highlights: [
       {
-        title: { zh: '背景產生佇列', en: 'Background generation queue' },
+        title: { zh: 'LLM 回應時間長又不穩定', en: 'LLM responses are slow and unreliable' },
         body: {
-          zh: 'LLM 產生一份綱要可能要數十秒，不能讓 HTTP 請求一直等。請求進來後只寫入佇列並立即回應，由 pg_cron 搭配 pg_net 定期觸發 worker 處理；使用者關掉分頁，筆記一樣會完成，完成或失敗都會發通知。',
-          en: 'Generating an outline can take tens of seconds, so HTTP requests must not wait on it. Requests only enqueue a job and return immediately; pg_cron with pg_net periodically triggers a worker. Notes finish even if the user closes the tab, and completion or failure produces a notification.',
+          zh: '請求只寫入佇列並立即回應，由 pg_cron 觸發 worker 在背景產生。使用者關掉分頁也會完成，完成或失敗都會通知。',
+          en: 'Requests only enqueue a job and return; pg_cron triggers a worker that generates in the background. Notes finish even if the tab is closed, and success or failure sends a notification.',
         },
-        ref: 'src/app/api/cron/process-generation-queue',
       },
       {
-        title: { zh: '點數錢包：先預扣、後結算', en: 'Credit wallet: hold, then true-up' },
+        title: { zh: '供應商會限流', en: 'Providers rate-limit' },
         body: {
-          zh: '所有防濫用規則都在 server 端裁決。呼叫 LLM 之前，先在 Postgres 以原子操作預扣點數，避免同時送出多個請求就能超用；完成後依實際用量結算，失敗則全額退回。',
-          en: 'All abuse rules are enforced server-side. Credits are held with an atomic Postgres operation before any LLM call, so concurrent requests cannot overspend; usage is trued-up after completion and fully refunded on failure.',
+          zh: '透過 Vercel AI SDK 串接 6 家 LLM 供應商，provider router 搭配 API key pool 與冷卻機制：某家額度用完或連續失敗就自動暫停並切換。',
+          en: 'Six LLM providers via the Vercel AI SDK. A provider router with an API key pool and cooldowns pauses a provider that is rate-limited or failing and switches to another.',
         },
-        ref: 'src/lib/api/generate-pipeline.ts',
       },
       {
-        title: { zh: '分桶 rate limit', en: 'Bucketed rate limiting' },
+        title: { zh: 'YouTube 影片可能沒有字幕', en: 'Some YouTube videos have no captions' },
         body: {
-          zh: '「攝取新內容」的 generate 端點（5 次／分鐘）與「由既有內容衍生」的測驗、圖表、跨文件複習端點（共用 10 次／分鐘）分成兩個桶，資料表主鍵為 (user_id, kind)，彼此不會互相排擠。',
-          en: 'The content-ingesting generate endpoint (5/min) and derived endpoints such as quiz, diagram and cross-doc review (shared 10/min) use separate buckets keyed by (user_id, kind), so neither starves the other.',
+          zh: '抓不到字幕時，把影片網址交給 Gemini 直接讀取影片內容，伺服器本身不下載影片。',
+          en: 'When there are no captions, the video URL goes to Gemini to read the video itself; the server never downloads the media.',
         },
-        ref: 'src/lib/quota.ts',
       },
       {
-        title: { zh: '多 LLM 供應商路由與斷路器', en: 'Multi-provider LLM routing with circuit breaker' },
+        title: { zh: '控制成本、防止惡意濫用', en: 'Keeping cost and abuse in check' },
         body: {
-          zh: '透過 Vercel AI SDK 串接多家 LLM，provider router 搭配 API key pool 與冷卻機制：某家供應商額度用完或連續失敗時自動暫停並切換，冷卻時間過後再恢復。',
-          en: 'Multiple LLM providers via the Vercel AI SDK. A provider router with an API key pool and cooldowns automatically pauses a provider that is rate-limited or repeatedly failing, and fails over until it recovers.',
+          zh: '呼叫 LLM 前先在 Postgres 以原子操作預扣點數，完成後依實際用量結算、失敗全額退回。攝取新內容與衍生功能分成兩個限流桶。',
+          en: 'Credits are held with an atomic Postgres operation before any LLM call, trued up after and refunded on failure. Ingesting new content and derived features use separate rate-limit buckets.',
         },
-        ref: 'src/lib/llm/provider-router.ts',
       },
       {
-        title: { zh: '雙金流訂閱同步', en: 'Two billing sources, one subscription state' },
+        title: { zh: '手機 App 要保持輕量', en: 'Keeping the mobile app lightweight' },
         body: {
-          zh: 'Web 走 Stripe、App 走 RevenueCat，兩邊都用 webhook 回寫同一份訂閱狀態；方案決定點數額度、字數上限、題數與群組上限。',
-          en: 'Stripe on the web and RevenueCat in the apps both write to a single subscription state via webhooks. The plan drives credit quota, length caps, quiz size and group limits.',
+          zh: 'App 以 Capacitor 包裝網頁，Web、iOS／Android 與 Chrome 擴充共用同一套後端，重的運算都留在伺服器。',
+          en: 'The apps wrap the web app with Capacitor, so web, iOS/Android and the Chrome extension share one backend and heavy work stays on the server.',
         },
-        ref: 'src/app/api/billing',
       },
       {
         title: { zh: '資料安全與生命週期', en: 'Data security and lifecycle' },
         body: {
-          zh: '以 Supabase RLS 控管資料存取，並收回 client 角色對內部寫入 RPC 的權限；定期清理到期筆記、失敗筆記、閒置帳號與 log，資料庫變更全部以 migration 版本化。',
-          en: 'Supabase RLS guards data access, and client roles are revoked from internal write RPCs. Scheduled jobs sweep expired notes, failed notes, inactive accounts and logs; every schema change is a versioned migration.',
+          zh: '以 RLS 控管資料存取，並收回 client 角色對內部寫入 RPC 的權限；定期清理到期筆記、閒置帳號與 log，資料庫變更全部以 migration 版本化。',
+          en: 'RLS guards data access and client roles are revoked from internal write RPCs. Scheduled jobs sweep expired notes, inactive accounts and logs; every schema change is a versioned migration.',
         },
-        ref: 'supabase/migrations',
       },
     ],
     learned: [
