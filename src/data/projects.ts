@@ -360,56 +360,58 @@ export const projects: Project[] = [
     return {"station": station, "yield_rate": round(rate, 3),
             "window": len(history), "threshold": self.threshold}`,
     },
-    problem: {
-      zh: '產線上每個測試站不斷產生 pass／fail 結果。如果某一站開始異常，工程師越晚發現，報廢的產品越多。這個系統要做到三件事：資料即時進來、良率即時算出來、異常即時通知。',
-      en: 'Every test station on a production line constantly produces pass/fail results. The later an engineer notices a failing station, the more product is scrapped. The system has three jobs: ingest data in real time, compute yield in real time, and alert in real time.',
-    },
-    flow: {
-      title: { zh: '資料流', en: 'Data flow' },
-      steps: [
-        { label: { zh: '工作站／模擬器', en: 'Station / simulator' }, detail: { zh: 'WebSocket /ws/station＋token', en: 'WebSocket /ws/station + token' } },
-        { label: { zh: 'Pydantic 驗證', en: 'Pydantic validation' }, detail: { zh: '格式錯誤回傳錯誤，連線不中斷', en: 'bad messages get an error reply, connection stays open' } },
-        { label: { zh: 'pipeline.handle_result()', en: 'pipeline.handle_result()' }, detail: { zh: '寫入 MongoDB → 廣播給 dashboard', en: 'insert into MongoDB → broadcast to dashboard' } },
-        { label: { zh: '滑動視窗良率檢查', en: 'Sliding-window yield check' }, detail: { zh: '低於門檻 → 寫入 alert 並廣播', en: 'below threshold → store alert and broadcast' } },
-        { label: { zh: 'LINE 推播告警', en: 'LINE push alert' }, detail: { zh: '開發中', en: 'in progress' }, planned: true },
+    credit: { zh: '獨立開發', en: 'Solo' },
+    architecture: {
+      path: [
+        {
+          box: { name: { zh: '工作站／模擬器', en: 'Stations / simulator' }, tech: ['WebSocket /ws/station'] },
+          step: { zh: '每筆測試結果即時上傳，附 token', en: 'Each test result is streamed with a token' },
+        },
+        {
+          box: { name: { zh: 'FastAPI 接收端', en: 'FastAPI ingest' }, tech: ['FastAPI', 'Pydantic'], note: { zh: 'token 常數時間比對；格式錯誤回覆錯誤但不斷線', en: 'Constant-time token check; bad messages get an error without dropping the connection' } },
+          step: { zh: 'handle_result() 寫入資料庫', en: 'handle_result() stores the result' },
+        },
+        {
+          box: { name: { zh: '資料庫', en: 'Database' }, tech: ['MongoDB', 'PyMongo async'], note: { zh: '(station, ts)、(lot, ts) 複合索引；TTL 7 天自動過期', en: 'Compound indexes on (station, ts) and (lot, ts); 7-day TTL' } },
+          step: { zh: '每站滑動視窗計算良率', en: 'Per-station sliding-window yield' },
+        },
+        {
+          box: { name: { zh: '告警判斷', en: 'Alert rules' }, tech: ['Python'], note: { zh: '樣本不足不判斷、低於門檻才觸發、同站冷卻期內不重複', en: 'No verdict on small samples, fire below threshold, one alert per station per cooldown' } },
+          step: { zh: '結果與告警即時廣播', en: 'Results and alerts are broadcast live' },
+        },
+        { box: { name: { zh: '即時看板', en: 'Live dashboard' }, tech: ['WebSocket', 'Origin allowlist'] } },
       ],
-      note: {
-        zh: '查詢端另外提供 GraphQL，做各站良率與 fail code 統計的 aggregation。',
-        en: 'A GraphQL endpoint serves aggregation queries such as per-station yield and fail-code counts.',
-      },
+      side: [
+        { name: { zh: '統計查詢', en: 'Analytics queries' }, tech: ['GraphQL (Strawberry)'], note: { zh: '各站良率與 fail code 的 aggregation', en: 'Per-station yield and fail-code aggregation' } },
+        { name: { zh: 'Demo 模式', en: 'Demo mode' }, tech: ['FastAPI'], note: { zh: '冷啟動回填一小時資料；有人看才產生資料', en: 'Backfills an hour on cold start; generates data only while watched' } },
+        { name: { zh: 'LINE 通知與認領（開發中）', en: 'LINE alerts and claiming (in progress)' }, tech: ['LINE Messaging API'] },
+        { name: { zh: '測試與部署', en: 'Testing and deployment' }, tech: ['pytest', 'Fake DB', 'Render'] },
+      ],
     },
     highlights: [
       {
-        title: { zh: '單一處理管線', en: 'One shared pipeline' },
+        title: { zh: '多個工作站同時送進測試結果', en: 'Many stations sending results at once' },
         body: {
-          zh: 'WebSocket 收到的真實資料和 demo 產生器的資料走同一個 handle_result()。資料庫透過參數注入，測試時換成 fake DB，不需要真的 MongoDB 就能測整條流程。',
-          en: 'Real WebSocket data and demo-generated data both go through the same handle_result(). The database is injected, so tests swap in a fake DB and exercise the full flow without MongoDB.',
+          zh: '非同步的 FastAPI 搭配 PyMongo async，每個工作站一條 WebSocket 連線。真實資料和 demo 產生器的資料走同一個 handle_result()；資料庫透過參數注入，測試時換成 fake DB 就能測整條流程。',
+          en: 'Async FastAPI with async PyMongo, one WebSocket per station. Real and demo data share the same handle_result(); the database is injected, so tests swap in a fake DB and exercise the whole flow.',
         },
         ref: 'app/pipeline.py',
       },
       {
-        title: { zh: '不誤報、不洗版的告警', en: 'Alerts without false alarms or floods' },
+        title: { zh: '伺服器數據要與產線實際情況一致', en: 'Server data must match the line' },
+        body: {
+          zh: '用 Pydantic model validator 表達業務規則：fail 一定要有 fail_code，pass 不能有 fail_code。格式錯誤的訊息會收到結構化的錯誤回覆，但連線不會斷，工作站可以直接重送；沒設定 token 時任何人都不能寫入。',
+          en: 'Business rules are Pydantic model validators: a fail must have a fail_code, a pass must not. Malformed messages get a structured error without dropping the connection, so stations can resend, and with no token configured nobody can write.',
+        },
+        ref: 'app/models.py',
+      },
+      {
+        title: { zh: '告警要準，不誤報也不洗版', en: 'Alerts without false alarms or floods' },
         body: {
           zh: '每站用 deque(maxlen=50) 維護滑動視窗：樣本少於 20 筆不判斷（避免小樣本誤報），良率低於 90% 才觸發，同一站 60 秒內不重複告警（避免洗版）。參數全部可由環境變數調整。',
           en: 'Each station keeps a sliding window in a deque(maxlen=50): no verdict under 20 samples (avoids small-sample false alarms), an alert only below 90% yield, and a 60-second per-station cooldown (avoids floods). All parameters are configurable via environment variables.',
         },
         ref: 'app/alerts.py',
-      },
-      {
-        title: { zh: '資料驗證寫在 schema 裡', en: 'Validation lives in the schema' },
-        body: {
-          zh: '用 Pydantic model validator 表達業務規則：fail 一定要有 fail_code，pass 不能有 fail_code。格式錯誤的訊息會收到結構化的錯誤回覆，但連線不會斷，工作站可以直接重送。',
-          en: 'Business rules are expressed as Pydantic model validators: a fail must have a fail_code, a pass must not. Malformed messages get a structured error reply without dropping the connection, so stations can simply resend.',
-        },
-        ref: 'app/models.py',
-      },
-      {
-        title: { zh: 'Fail-closed 的寫入權限', en: 'Fail-closed write access' },
-        body: {
-          zh: '沒設定 INGEST_TOKEN 時，任何人都不能寫入；token 用 secrets.compare_digest 做常數時間比對，避免 timing attack。Dashboard WebSocket 另外做 Origin 白名單檢查。',
-          en: 'With no INGEST_TOKEN configured, nobody can write. Tokens are compared in constant time with secrets.compare_digest to prevent timing attacks, and the dashboard WebSocket checks an Origin allowlist.',
-        },
-        ref: 'app/config.py',
       },
       {
         title: { zh: '索引與資料生命週期', en: 'Indexes and data lifecycle' },
@@ -429,7 +431,7 @@ export const projects: Project[] = [
       },
     ],
     roadmap: {
-      title: { zh: '下一步：LINE 告警整合（開發中）', en: 'Next: LINE alert integration (in progress)' },
+      title: { zh: '串接通訊軟體即時通知：LINE 整合（開發中）', en: 'Messaging-app alerts: LINE integration (in progress)' },
       intro: {
         zh: '讓現場工程師不用盯著 dashboard，異常直接推到手機。推播會透過背景佇列發送，不阻塞資料寫入。',
         en: 'So engineers do not have to watch the dashboard: anomalies are pushed straight to their phones, sent through a background queue so ingestion is never blocked.',
@@ -496,27 +498,54 @@ export const projects: Project[] = [
         },
       },
     ],
-    problem: {
-      zh: '工作或讀書時，一拿起手機就分心，而且自己通常不知道分心了多少次、多久。這個 App 像西洋棋鐘一樣計時：專注期間只要離開 App 就自動記一筆分心，結束後讓使用者看到真實的專注比例。難點在於手機系統不會直接告訴 App「使用者是鎖螢幕，還是切去別的 App」，而這兩者一個不該算分心、一個要算。',
-      en: 'When people work or study, picking up the phone breaks focus, and they rarely know how often or for how long. The app works like a chess clock: leaving the app during a session records a distraction, and the review shows the real focus ratio. The hard part is that the OS does not tell an app whether the user locked the screen or switched to another app, and only the second one should count.',
-    },
-    flow: {
-      title: { zh: '分心偵測流程', en: 'Distraction detection' },
-      steps: [
-        { label: { zh: 'App 狀態改變', en: 'App state changes' }, detail: { zh: 'AppState（手機）／visibilitychange + blur（Web）', en: 'AppState (mobile) / visibilitychange + blur (web)' } },
-        { label: { zh: '原生模組查詢螢幕狀態', en: 'Native module checks the screen' }, detail: { zh: 'Android PowerManager.isInteractive()・iOS 螢幕亮度', en: 'Android PowerManager.isInteractive() · iOS screen brightness' } },
-        { label: { zh: 'iOS 時間差判斷', en: 'iOS timing heuristic' }, detail: { zh: 'inactive → background 少於 200ms 視為鎖螢幕', en: 'inactive → background under 200 ms means screen lock' } },
-        { label: { zh: '記錄分心開始與結束', en: 'Record distraction start and end' }, detail: { zh: '回到 App 時結算時長，寫入本機儲存', en: 'duration settled on return, saved locally' } },
+    credit: { zh: '獨立開發', en: 'Solo' },
+    architecture: {
+      path: [
+        {
+          box: { name: { zh: '系統事件', en: 'OS events' }, tech: ['AppState', 'visibilitychange (Web)'] },
+          step: { zh: '專注中 App 進入背景', en: 'The app leaves the foreground mid-session' },
+        },
+        {
+          box: { name: { zh: '分心偵測', en: 'Distraction detector' }, tech: ['TypeScript', 'React Native 0.81', 'Expo 54'] },
+          step: { zh: '詢問螢幕是否還亮著', en: 'Ask whether the screen is still on' },
+        },
+        {
+          box: { name: { zh: '原生模組', en: 'Native module' }, tech: ['Expo Modules', 'Swift', 'Kotlin'], note: { zh: 'Android 查 PowerManager；iOS 看狀態轉換的時間差', en: 'Android asks PowerManager; iOS reads the state-transition timing' } },
+          step: { zh: '判定是切換 App 才記一筆分心', en: 'Only an app switch is recorded as a distraction' },
+        },
+        {
+          box: { name: { zh: '本機儲存', en: 'On-device storage' }, tech: ['AsyncStorage'], note: { zh: '資料結構版本化遷移；8 天前的紀錄自動清除', en: 'Versioned schema migrations; records older than 8 days are cleaned up' } },
+          step: { zh: '回到 App 時結算分心時長', en: 'Duration is settled on return' },
+        },
+        { box: { name: { zh: '回顧畫面', en: 'Session review' }, tech: ['React Native'], note: { zh: '專注比例與分心時間軸', en: 'Focus ratio and distraction timeline' } } },
+      ],
+      side: [
+        { name: { zh: '內購', en: 'In-app purchase' }, tech: ['react-native-iap', 'App Store', 'Google Play'], note: { zh: '試用、Pro、過期三種授權狀態', en: 'Trial, Pro and expired license states' } },
+        { name: { zh: '多語系', en: 'Localization' }, tech: ['i18next'], note: { zh: '10 種介面語言', en: '10 UI languages' } },
+        { name: { zh: '測試與上架', en: 'Testing and release' }, tech: ['Jest', 'Maestro', 'EAS'] },
       ],
     },
     highlights: [
       {
-        title: { zh: '區分鎖螢幕與切換 App', en: 'Telling screen lock from app switching' },
+        title: { zh: '專注中的畫面不能打擾使用者', en: 'The in-session screen must stay out of the way' },
+        body: {
+          zh: '專注期間的畫面只有計時與當前任務，像西洋棋鐘一樣只計時、不跳提醒；提供日間與夜間兩套主題。',
+          en: 'During a session the screen shows only the timer and the current task, like a chess clock that never nags, with day and night themes.',
+        },
+      },
+      {
+        title: { zh: '分心紀錄要一眼看懂', en: 'The distraction record must read at a glance' },
+        body: {
+          zh: '結束後只給兩個東西：專注比例，以及標出每次分心起訖的時間軸。',
+          en: 'The review shows just two things: the focus ratio and a timeline marking each distraction.',
+        },
+      },
+      {
+        title: { zh: 'iOS 與 Android 對分心的判定模式不同', en: 'iOS and Android detect distractions differently' },
         body: {
           zh: 'iOS 按電源鍵時 inactive → background 的轉換不到 200ms，手勢切換 App 則要 300ms 以上，以此時間差判斷；Android 沒有可靠的 inactive 中間狀態，改用自己寫的 Expo 原生模組呼叫 PowerManager.isInteractive()。原生模組不可用時（例如 Expo Go）回傳 null，由呼叫端決定備援行為。',
           en: 'On iOS, pressing the power button moves inactive → background in under 200 ms, while an app-switch gesture takes 300 ms or more, so the timing decides. Android has no reliable inactive state, so a custom Expo native module calls PowerManager.isInteractive(). When the native module is unavailable (e.g. Expo Go) it returns null and the caller decides the fallback.',
         },
-        ref: 'src/hooks/useDistractionDetector.ts',
       },
       {
         title: { zh: '本機資料的版本化遷移', en: 'Versioned migrations for local data' },
@@ -524,7 +553,6 @@ export const projects: Project[] = [
           zh: '資料只存在使用者手機上（AsyncStorage），沒有伺服器可以幫忙修資料，所以資料結構有版本號：App 啟動時先跑遷移再讀資料，新版本只要加一筆 migration。同時自動清除 8 天前的紀錄，控制儲存量。',
           en: 'Data lives only on the device (AsyncStorage), with no server to fix it, so the schema is versioned: migrations run on launch before any read, and a new version just appends a migration. Records older than 8 days are cleaned up automatically to bound storage.',
         },
-        ref: 'src/utils/migration.ts',
       },
       {
         title: { zh: '內購與授權狀態', en: 'In-app purchase and license state' },
@@ -532,7 +560,6 @@ export const projects: Project[] = [
           zh: '以 react-native-iap 串接 App Store 與 Google Play。授權狀態（試用、Pro、過期）由安裝時間與購買紀錄計算；試用期間購買走早鳥商品，試用結束後走原價商品，並支援還原購買。',
           en: 'react-native-iap connects the App Store and Google Play. License state (trial, Pro, expired) is computed from install time and purchase records; purchases during the trial use the early-bird SKU and the regular SKU afterwards, with restore support.',
         },
-        ref: 'src/contexts/LicenseContext.tsx',
       },
       {
         title: { zh: '測試與上架流程', en: 'Testing and release' },
@@ -606,20 +633,45 @@ export const projects: Project[] = [
   }, { noAck: false })
 }`,
     },
-    problem: {
-      zh: '儲值、下注、建立帳號這類操作，如果在 API 裡同步處理，尖峰時請求會堆積。我想實際理解：怎麼把工作交給 worker、怎麼確保訊息不會掉、以及 worker 做完之後怎麼把結果回給原本的請求。',
-      en: 'Doing top-ups, bets or sign-ups synchronously inside the API makes requests pile up at peak load. I wanted hands-on answers to: how to hand work to workers, how to make sure messages are not lost, and how a worker returns a result to the original request.',
-    },
-    flow: {
-      title: { zh: '線上 demo 架構（Express 版）', en: 'Live demo architecture (Express version)' },
-      steps: [
-        { label: { zh: 'Express + Handlebars', en: 'Express + Handlebars' }, detail: { zh: '訪客 session 存在 Redis（Render Key Value）', en: 'guest sessions in Redis (Render Key Value)' } },
-        { label: { zh: 'RabbitMQ', en: 'RabbitMQ' }, detail: { zh: 'CloudAMQP・儲值與升級各一條 queue', en: 'CloudAMQP · one queue each for top-ups and upgrades' } },
-        { label: { zh: '2 個 worker（pm2 多行程）', en: '2 workers (pm2 processes)' }, detail: { zh: '和 web 跑在同一個 Render 服務', en: 'run alongside the web process on one Render service' } },
-        { label: { zh: 'MongoDB Atlas', en: 'MongoDB Atlas' }, detail: { zh: 'TTL index 一小時後自動刪除訪客', en: 'TTL index removes guests after an hour' } },
+    credit: { zh: '個人練習專案，兩個 repo 皆為獨立開發', en: 'Personal learning project; both repos built solo' },
+    architecture: {
+      path: [
+        {
+          box: { name: { zh: '瀏覽器', en: 'Browser' }, tech: ['Express', 'Handlebars', 'Redis session'], note: { zh: '免登入自動建立訪客帳號', en: 'A guest account is created on first visit' } },
+          step: { zh: '每次儲值或升級發出一則訊息', en: 'Each top-up or upgrade becomes one message' },
+        },
+        {
+          box: { name: { zh: '訊息佇列', en: 'Message queue' }, tech: ['RabbitMQ', 'CloudAMQP'], note: { zh: '儲值與升級各一條 queue', en: 'One queue each for top-ups and upgrades' } },
+          step: { zh: 'worker 依序取出處理', en: 'Workers take messages in order' },
+        },
+        {
+          box: { name: { zh: 'Worker', en: 'Workers' }, tech: ['Node.js', 'pm2 ×2'], note: { zh: '套用前檢查餘額與等級上限', en: 'Check balance and level cap before applying' } },
+          step: { zh: '寫入餘額與裝備等級', en: 'Write balance and gear levels' },
+        },
+        { box: { name: { zh: '資料庫', en: 'Database' }, tech: ['MongoDB Atlas', 'Mongoose'], note: { zh: 'TTL index 一小時後自動刪除訪客', en: 'A TTL index removes guests after an hour' } } },
+      ],
+      side: [
+        { name: { zh: 'Fastify 版', en: 'Fastify version' }, tech: ['Fastify', 'awilix', 'worker_threads'], note: { zh: '手動 ack、RPC 回覆、fanout 與依賴注入', en: 'Manual acks, RPC replies, fanout and dependency injection' } },
+        { name: { zh: '部署', en: 'Deployment' }, tech: ['Render'], note: { zh: 'web 與 worker 跑在同一個服務', en: 'Web and workers run on one service' } },
       ],
     },
     highlights: [
+      {
+        title: { zh: '使用者連點儲值、升級', en: 'Users clicking top-up or upgrade repeatedly' },
+        body: {
+          zh: '每次點擊都是一則獨立的佇列訊息，由 worker 依序處理，API 不會被連點塞住；點數不足時升級按鈕直接停用。目前 worker 以「讀出→修改→存回」更新，同一使用者的訊息被兩個 worker 同時處理時會有競態，下一版改用 $inc 原子更新。',
+          en: 'Every click is its own queued message handled by workers in order, so rapid clicks never clog the API, and upgrade buttons are disabled without enough gems. Workers still update with read-modify-write, which races when two workers take the same user; the next version moves to atomic $inc updates.',
+        },
+        ref: 'worker/worker-levelup.js',
+      },
+      {
+        title: { zh: '確保每一筆交易的流程合乎邏輯', en: 'Every transaction follows a sound flow' },
+        body: {
+          zh: '路由只接受白名單內的動作；worker 套用前再檢查等級上限與餘額（每次升級 500 點），不符合就不做任何變更。',
+          en: 'Routes accept only allowlisted actions, and workers re-check the level cap and balance (500 gems per upgrade) before applying, changing nothing otherwise.',
+        },
+        ref: 'routes/modules/gearup.js',
+      },
       {
         title: { zh: '三種訊息模式', en: 'Three messaging patterns' },
         body: {
@@ -713,9 +765,21 @@ export const projects: Project[] = [
     },
     stack: ['Node.js', 'Express', 'Sequelize', 'PostgreSQL', 'Apollo Server (GraphQL)', 'Passport JWT', 'Mocha / Chai'],
     links: [{ label: { zh: 'GitHub', en: 'GitHub' }, href: 'https://github.com/playcsgo/coffee_api_postgresql' }],
-    problem: {
-      zh: '想理解同一套資料模型換資料庫、換 API 風格時，哪些地方會壞掉。',
-      en: 'I wanted to learn what breaks when the same data model moves to a different database and a different API style.',
+    credit: { zh: '團隊專案後端成員；PostgreSQL 遷移與 GraphQL 為個人延伸', en: 'Backend member of the team; the PostgreSQL migration and GraphQL layer were my own follow-up' },
+    architecture: {
+      path: [
+        {
+          box: { name: { zh: '前端', en: 'Frontend' }, tech: ['SPA'], note: { zh: '由團隊其他成員開發', en: 'Built by other team members' } },
+          step: { zh: 'REST 或 GraphQL 請求，附 JWT', en: 'REST or GraphQL request with a JWT' },
+        },
+        {
+          box: { name: { zh: 'API', en: 'API' }, tech: ['Express', 'Passport JWT', 'Apollo Server'], note: { zh: 'REST 路由與 GraphQL resolver 並存', en: 'REST routes and GraphQL resolvers side by side' } },
+          step: { zh: '共用同一套 model', en: 'Both share one set of models' },
+        },
+        { box: { name: { zh: 'ORM', en: 'ORM' }, tech: ['Sequelize'] }, step: { zh: 'migration 從 MySQL 搬到 PostgreSQL', en: 'Migrations moved from MySQL to PostgreSQL' } },
+        { box: { name: { zh: '資料庫', en: 'Database' }, tech: ['PostgreSQL'] } },
+      ],
+      side: [{ name: { zh: '測試', en: 'Tests' }, tech: ['Mocha', 'Chai'] }],
     },
     highlights: [
       {

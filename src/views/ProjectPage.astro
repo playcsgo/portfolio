@@ -100,7 +100,7 @@ const { lang, project: p } = Astro.props;
   {p.flow && <section><Flow lang={lang} flow={p.flow} /></section>}
 
   <section>
-    <h2>{t(lang, p.architecture ? 'answers' : 'highlights')}</h2>
+    <h2>{t(lang, p.home.points ? 'answers' : 'highlights')}</h2>
     <div class="highlights">
       {
         p.highlights.map((h, i) => (
