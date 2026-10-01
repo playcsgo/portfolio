@@ -168,10 +168,10 @@ export const projects: Project[] = [
     shots: [
       {
         src: { zh: yOutlineZh, en: yOutlineEn },
-        alt: { zh: 'Yoution 由 LLM 產生的分段綱要', en: 'An LLM-generated diagram in Yoution' },
+        alt: { zh: 'Yoution 由 LLM 產生的分段綱要', en: 'An LLM-generated sectioned outline in Yoution' },
         caption: {
           zh: '貼上一篇文章，背景產生分段綱要，左側目錄可直接跳到各段',
-          en: 'Paste a piece of content and the backend generates an outline and a diagram in the background (rendered as scalable SVG)',
+          en: 'Paste an article and the backend generates a sectioned outline in the background; the contents list jumps to each section',
         },
       },
       {
