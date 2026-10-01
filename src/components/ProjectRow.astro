@@ -1,6 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import type { Lang, Project } from '../data/projects';
+import type { Lang, LinkKind, Project } from '../data/projects';
 import { t, tx, href, shortTitle } from '../data/site';
 
 interface Props {
@@ -10,9 +10,17 @@ interface Props {
 }
 const { lang, project: p, index } = Astro.props;
 const url = href(lang, `/${p.slug}/`);
-const external = p.links[0];
-const externalHref = external && (typeof external.href === 'string' ? external.href : tx(lang, external.href));
-const externalLabel = external && tx(lang, external.label).replace(/^(官網|Website) /, '');
+const linkLabel: Record<LinkKind, string> = {
+  web: 'Web',
+  ios: 'App Store',
+  android: 'Google Play',
+  chrome: lang === 'zh' ? 'Chrome 擴充功能' : 'Chrome extension',
+  github: 'GitHub',
+};
+const cardLinks = (p.home.links ?? []).map((l) => ({
+  label: linkLabel[l.kind],
+  href: typeof l.href === 'string' ? l.href : tx(lang, l.href),
+}));
 const { panel } = p.home;
 const shots = (panel.shots ?? []).map((i) => p.shots![i]);
 const num = String(index + 1).padStart(2, '0');
@@ -36,10 +44,23 @@ const num = String(index + 1).padStart(2, '0');
       )
     }
     <ul class="tags">{p.home.tags.map((s) => <li>{s}</li>)}</ul>
-    <div class="links">
-      <a class="case" href={url}>{t(lang, 'view_case')} →</a>
-      {externalHref && <a class="ext" href={externalHref} target="_blank" rel="noopener">{externalLabel} ↗</a>}
-    </div>
+    {
+      cardLinks.length > 0 && (
+        <div class="link-group">
+          <p class="mono">{t(lang, 'links')}</p>
+          <ul>
+            {cardLinks.map((l) => (
+              <li>
+                <a href={l.href} target="_blank" rel="noopener">
+                  {l.label} <span class="arr">↗</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+    <a class="case" href={url}>{t(lang, 'view_case')} <span class="arr">→</span></a>
   </div>
 
   <a class:list={['panel', panel.layout]} href={url} style={`--panel:${panel.bg}`} tabindex="-1" aria-hidden="true">
@@ -99,6 +120,16 @@ const num = String(index + 1).padStart(2, '0');
   }
   h2 a {
     color: var(--text);
+    background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat;
+    transition: background-size 0.3s ease;
+  }
+  h2 a:hover {
+    text-decoration: none;
+    background-size: 100% 1px;
+  }
+  .arr {
+    display: inline-block;
+    transition: transform 0.2s ease;
   }
   .blurb {
     margin: 0;
@@ -122,26 +153,66 @@ const num = String(index + 1).padStart(2, '0');
     letter-spacing: 0.06em;
     color: var(--faint);
   }
-  .links {
+  .link-group {
+    margin-top: 24px;
+  }
+  .link-group p {
+    margin: 0 0 6px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+  }
+  .link-group ul {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 24px;
+    gap: 4px 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
     font-size: 15px;
-    font-weight: 500;
   }
-  .links a {
-    padding: 10px 0 2px;
+  .link-group a {
+    color: var(--muted);
+    transition: color 0.2s ease;
+  }
+  .link-group a:hover {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .link-group a:hover .arr {
+    transform: translate(2px, -2px);
+  }
+  .link-group li {
+    display: inline-block;
+  }
+  .link-group li:hover {
+    animation: wiggle 0.4s ease;
+  }
+  @keyframes wiggle {
+    20% { transform: rotate(-4deg); }
+    40% { transform: rotate(3deg); }
+    60% { transform: rotate(-2deg); }
+    80% { transform: rotate(1deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .link-group li:hover {
+      animation: none;
+    }
   }
   .case {
+    align-self: flex-start;
+    margin-top: 28px;
+    padding: 4px 0 2px;
+    font-size: 15px;
+    font-weight: 500;
     color: var(--text);
     border-bottom: 1px solid var(--text);
   }
-  .ext {
-    color: var(--muted);
-  }
-  .links a:hover {
+  .case:hover {
     text-decoration: none;
-    color: var(--muted);
+  }
+  .case:hover .arr {
+    transform: translateX(4px);
   }
 
   /* Image panel: each project has its own tinted background */

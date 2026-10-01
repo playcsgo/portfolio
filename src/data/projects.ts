@@ -21,6 +21,7 @@ import gearShot from '../assets/shots/gear-demo.png';
 export type Lang = 'zh' | 'en';
 export type L = { zh: string; en: string };
 
+export type LinkKind = 'web' | 'ios' | 'android' | 'chrome' | 'github';
 export type Status = 'live' | 'in-progress' | 'archived';
 
 export interface FlowStep {
@@ -69,6 +70,8 @@ export interface Project {
     /** One-line product intro plus the technical barrier; projects without a product use blurb */
     points?: { intro: L; barrier: L };
     blurb?: L;
+    /** Links shown on the home card */
+    links?: { kind: LinkKind; href: string | L }[];
     byline: L;
     index: string;
     tags: string[];
@@ -93,8 +96,12 @@ export const projects: Project[] = [
   {
     slug: 'yoution',
     home: {
+      links: [
+        { kind: 'web', href: 'https://yoution.app' },
+        { kind: 'chrome', href: 'https://chromewebstore.google.com/detail/yoution/faplonbnkjffeblcbfmilifkplkpijik' },
+      ],
       points: {
-        intro: { zh: '把 YouTube、文章、PDF 總結成綱要、示意圖與測驗，用於篩選及記憶。', en: 'Summarizes YouTube videos, articles and PDFs into outlines, diagrams and quizzes, to help you decide what is worth your time and remember it.' },
+        intro: { zh: '把 YouTube、文章、PDF 總結成綱要、示意圖與測驗，用於篩選及記憶，並提供後台管理。', en: 'Summarizes YouTube videos, articles and PDFs into outlines, diagrams and quizzes, to help you decide what is worth your time and remember it, with an admin back office.' },
         barrier: { zh: 'LLM 回應時間長又不穩定、供應商會限流、YouTube 影片可能沒有字幕，同時要控制成本、防止惡意濫用，手機 App 要保持輕量。', en: 'LLM responses are slow and unreliable, providers rate-limit, some YouTube videos have no captions, cost and abuse have to stay in check, and the mobile app has to stay lightweight.' },
       },
       byline: { zh: '獨立開發', en: 'Solo' },
@@ -241,6 +248,10 @@ export const projects: Project[] = [
   {
     slug: 'mock-mes',
     home: {
+      links: [
+        { kind: 'web', href: { zh: 'https://agilenpi.com/mes_demo/cn', en: 'https://agilenpi.com/mes_demo/en' } },
+        { kind: 'github', href: 'https://github.com/playcsgo/mock_mes' },
+      ],
       points: {
         intro: { zh: '即時監控產線進度與良率，異常自動通報，並由人員認領處理。', en: 'Monitors production-line progress and yield in real time, reports anomalies automatically and lets staff claim and resolve them.' },
         barrier: { zh: '多個工作站同時送進測試結果，伺服器上的數據要與產線實際情況一致，還要串接通訊軟體即時通知。', en: 'Many stations send results at once, server data has to match what is really happening on the line, and alerts go out through a messaging app.' },
@@ -396,6 +407,10 @@ export const projects: Project[] = [
   {
     slug: 'focus-correction',
     home: {
+      links: [
+        { kind: 'ios', href: 'https://apps.apple.com/app/id6774055293' },
+        { kind: 'android', href: 'https://play.google.com/store/apps/details?id=com.agilenpi.focus' },
+      ],
       points: {
         intro: { zh: '記錄分心次數與時間、幫你延長專注的 App，已上架 App Store 與 Google Play。', en: 'An app that tracks how often and how long you get distracted to help you focus longer, live on the App Store and Google Play.' },
         barrier: { zh: 'UI / UX：專注中的畫面不能打擾使用者，結束後的分心紀錄要一眼看懂。iOS 與 Android 對於分心的判定模式不同。', en: 'UI / UX: the in-session screen has to stay out of the way, and the distraction review has to read at a glance. iOS and Android also detect distractions differently.' },
@@ -492,6 +507,10 @@ export const projects: Project[] = [
   {
     slug: 'async-jobs-rabbitmq',
     home: {
+      links: [
+        { kind: 'web', href: 'https://gear-demo.onrender.com' },
+        { kind: 'github', href: 'https://github.com/playcsgo/cv_equipment' },
+      ],
       points: {
         intro: { zh: '儲值、升級裝備的小遊戲，打開就能用訪客帳號直接玩。', en: 'A small top-up and gear-upgrade game; open it and you are playing as a guest.' },
         barrier: { zh: '使用者連點儲值、升級時要正確處理，確保每一筆交易的流程都合乎邏輯。', en: 'Rapid repeated clicks on top-up and upgrade have to be handled correctly, and every transaction has to follow a sound flow.' },
@@ -620,6 +639,7 @@ export const projects: Project[] = [
   {
     slug: 'twitter-api-postgresql-graphql',
     home: {
+      links: [{ kind: 'github', href: 'https://github.com/playcsgo/coffee_api_postgresql' }],
       blurb: { zh: '同一套資料模型換資料庫、換 API 風格時，哪裡會壞？把後端從 MySQL 遷到 PostgreSQL，再加上 Apollo GraphQL。', en: 'What breaks when the same data model moves to another database and API style? I migrated the backend from MySQL to PostgreSQL and added Apollo GraphQL.' },
       byline: { zh: '團隊專案＋個人延伸', en: 'Team project + solo follow-up' },
       index: 'PostgreSQL · Apollo GraphQL · Sequelize',
