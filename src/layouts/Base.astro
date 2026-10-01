@@ -41,7 +41,7 @@ const { links } = site;
   <body>
     <header class="site-header">
       <div class="wrap-wide header-inner">
-        <a class="brand" href={href(lang, '/')}>~/samlu</a>
+        <a class="brand" href={href(lang, '/')}>Portfolio</a>
         <nav class="primary">
           <a href={href(lang, '/#index')}>{t(lang, 'nav_projects')}</a>
           <a href={href(lang, '/#experience')}>{t(lang, 'nav_experience')}</a>
@@ -121,6 +121,7 @@ const { links } = site;
     --accent: #b8430f;
     --accent-soft: #f6e3d8;
     --dot: #e2571c;
+    --live: #2f8a3e;
     --warn: #a15c07;
     --warn-soft: #f6ebd9;
     --invert-bg: #141414;
@@ -151,6 +152,8 @@ const { links } = site;
       --accent: #f08a4b;
       --accent-soft: #3a2416;
       --dot: #f06a2e;
+    --live: #4cc265;
+      --live: #4cc265;
       --warn: #f0a94b;
       --warn-soft: #34270f;
       --invert-bg: #edebe4;
@@ -175,6 +178,7 @@ const { links } = site;
     --accent: #f08a4b;
     --accent-soft: #3a2416;
     --dot: #f06a2e;
+    --live: #4cc265;
     --warn: #f0a94b;
     --warn-soft: #34270f;
     --invert-bg: #edebe4;
@@ -490,8 +494,8 @@ const { links } = site;
     border: 1px solid var(--faint);
   }
   .badge.live::before {
-    background: var(--dot);
-    border-color: var(--dot);
+    background: var(--live);
+    border-color: var(--live);
   }
   .badge.in-progress::before {
     background: var(--warn);

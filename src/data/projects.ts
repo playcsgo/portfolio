@@ -93,8 +93,8 @@ export const projects: Project[] = [
     home: {
       blurb: { zh: '把 YouTube、文章、PDF 變成示意圖與測驗。後端要處理的是：LLM 又慢又貴還會被限流，付費功能還得防濫用。', en: 'Turns YouTube videos, articles and PDFs into diagrams and quizzes. On the backend, LLM calls are slow, costly and rate-limited, and paid features have to resist abuse.' },
       byline: { zh: '獨立開發', en: 'Solo' },
-      index: 'Next.js · Supabase · Stripe · AI SDK',
-      tags: ['Next.js 15', 'Supabase / Postgres', 'RLS', 'pg_cron', 'Stripe'],
+      index: 'Next.js · PostgreSQL (Supabase) · Stripe · AI SDK',
+      tags: ['Next.js 15', 'PostgreSQL (Supabase)', 'RLS', 'pg_cron', 'Stripe'],
       panel: { bg: '#EBDCCF', layout: 'pair', shots: [0, 1] },
     },
     icon: iconYoution,
@@ -115,7 +115,7 @@ export const projects: Project[] = [
     stack: [
       'TypeScript',
       'Next.js 15 (App Router)',
-      'Supabase / PostgreSQL',
+      'PostgreSQL (Supabase)',
       'Row Level Security',
       'pg_cron / pg_net',
       'Vercel AI SDK',
@@ -238,7 +238,7 @@ export const projects: Project[] = [
     home: {
       blurb: { zh: '模擬產線 MES。工作站用 WebSocket 上傳測試結果，後端即時算良率、觸發告警：越晚發現異常，報廢越多。', en: 'A mock MES: stations stream test results over WebSocket, and the backend computes yield and raises alerts in real time. The later a failing station is noticed, the more gets scrapped.' },
       byline: { zh: '獨立開發', en: 'Solo' },
-      index: 'FastAPI · WebSocket · MongoDB',
+      index: 'FastAPI · WebSocket · GraphQL · MongoDB',
       tags: ['FastAPI', 'WebSocket', 'MongoDB async', 'GraphQL', 'pytest'],
       panel: { bg: '#1E2327', layout: 'frame', shots: [0] },
     },
@@ -390,8 +390,8 @@ export const projects: Project[] = [
     home: {
       blurb: { zh: '專注期間離開 App 就記一次分心。系統不會告訴 App 是鎖螢幕還是切走，所以自己寫了 Swift／Kotlin 原生模組。', en: 'Leaving the app during a session counts as a distraction. The OS won\'t say whether the user locked the screen or switched apps, so I wrote native Swift / Kotlin modules.' },
       byline: { zh: '獨立開發', en: 'Solo' },
-      index: 'React Native · Expo Modules · IAP',
-      tags: ['React Native', 'Expo Modules', 'IAP', '142 Maestro E2E'],
+      index: 'React Native · Expo Modules · In-App Purchase',
+      tags: ['React Native', 'Expo Modules', 'In-App Purchase', '142 Maestro E2E'],
       panel: { bg: '#16181B', layout: 'bleed', shots: [0] },
     },
     icon: iconFocus,

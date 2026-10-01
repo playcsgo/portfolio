@@ -15,8 +15,8 @@ export const site = {
     { group: { zh: '測試與部署', en: 'Testing & Ops' } as L, items: ['pytest', 'Vitest', 'Playwright', 'Docker', 'AWS', 'Vercel', 'Render'] },
   ],
   headline: {
-    muted: { zh: '能跑，只是起點。', en: 'Working is just the start.' } as L,
-    strong: { zh: '我寫的是尖峰、斷線、重試時\n也站得住的後端。', en: 'I build backends that hold up\nunder peak load, dropped\nconnections and retries.' } as L,
+    messy: { zh: '把模糊的需求', en: 'Vague requirements,' } as L,
+    strong: { zh: '整理成扛得住真實世界的系統', en: 'shaped into systems that hold up\nin the real world' } as L,
   },
   stats: [
     { value: { zh: '10+ 年', en: '10+ yrs' } as L, label: { zh: '硬體製造業現場經驗', en: 'in hardware manufacturing' } as L },
