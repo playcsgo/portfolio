@@ -28,7 +28,7 @@ const shotStyle = (i: number) => (vt ? `view-transition-name: ${vt}-${i}; view-t
   }
   {
     panel.code && (
-      <div class="windows">
+      <div class="windows" style={shotStyle(shots.length)}>
         {panel.code.map((c) => (
           <div class="win">
             <div class="bar">{c.label}</div>
@@ -145,6 +145,14 @@ const shotStyle = (i: number) => (vt ? `view-transition-name: ${vt}-${i}; view-t
     aspect-ratio: auto;
   }
   /* Shots fit inside the banner so nothing gets clipped when a transition lands */
+  .banner.bleed img {
+    width: auto;
+    height: 100%;
+  }
+  /* Code windows keep the card's width so their text does not reflow mid-flight */
+  .banner .windows {
+    max-width: 640px;
+  }
   .banner.cascade img {
     width: auto;
   }

@@ -90,7 +90,7 @@ export interface Project {
   flow?: { title: L; steps: FlowStep[]; note?: L };
   highlights: Highlight[];
   learned?: L[];
-  /** Case study opens with the home panel as a banner (rolling out one project at a time) */
+  /** Case study opens with the home panel as a banner */
   banner?: boolean;
   roadmap?: { title: L; intro: L; items: L[] };
 }
@@ -260,6 +260,7 @@ export const projects: Project[] = [
   // ─────────────────────────────────────────────── Line Monitor
   {
     slug: 'mock-mes',
+    banner: true,
     home: {
       links: [
         { kind: 'web', href: { zh: 'https://agilenpi.com/mes_demo/cn', en: 'https://agilenpi.com/mes_demo/en' } },
@@ -419,6 +420,7 @@ export const projects: Project[] = [
   // ─────────────────────────────────────────────── Focus Correction
   {
     slug: 'focus-correction',
+    banner: true,
     home: {
       links: [
         { kind: 'ios', href: 'https://apps.apple.com/app/id6774055293' },
@@ -519,6 +521,7 @@ export const projects: Project[] = [
   // ─────────────────────────────────────────────── RabbitMQ
   {
     slug: 'async-jobs-rabbitmq',
+    banner: true,
     home: {
       links: [
         { kind: 'web', href: 'https://gear-demo.onrender.com' },
@@ -651,6 +654,7 @@ export const projects: Project[] = [
   // ─────────────────────────────────────────────── Twitter API
   {
     slug: 'twitter-api-postgresql-graphql',
+    banner: true,
     home: {
       links: [{ kind: 'github', href: 'https://github.com/playcsgo/coffee_api_postgresql' }],
       blurb: { zh: '同一套資料模型換資料庫、換 API 風格時，哪裡會壞？把後端從 MySQL 遷到 PostgreSQL，再加上 Apollo GraphQL。', en: 'What breaks when the same data model moves to another database and API style? I migrated the backend from MySQL to PostgreSQL and added Apollo GraphQL.' },
