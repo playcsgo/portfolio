@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import Flow from '../components/Flow.astro';
 import Screenshot from '../components/Screenshot.astro';
 import CodeWindow from '../components/CodeWindow.astro';
+import ProjectPanel from '../components/ProjectPanel.astro';
 import type { Lang, Project } from '../data/projects';
 import { t, tx, href } from '../data/site';
 
@@ -15,6 +16,8 @@ const { lang, project: p } = Astro.props;
 
 <Base lang={lang} title={tx(lang, p.title)} description={tx(lang, p.tagline)}>
   <a class="back" href={href(lang, '/#projects')}>← {t(lang, 'back')}</a>
+
+  {p.banner && <ProjectPanel class="hero-banner" lang={lang} project={p} banner />}
 
   <header class="top">
     <div class="meta">
@@ -37,7 +40,7 @@ const { lang, project: p } = Astro.props;
   </header>
 
   {
-    p.shots && (
+    !p.banner && p.shots && (
       <div class="shots">
         {p.shots.map((s, i) => (
           <Screenshot lang={lang} shot={s} eager={i === 0} sizes={i === 0 ? undefined : '(min-width: 720px) 440px, 100vw'} />
@@ -100,6 +103,19 @@ const { lang, project: p } = Astro.props;
   </section>
 
   {
+    p.banner && p.shots && (
+      <section>
+        <h2>{t(lang, 'screens')}</h2>
+        <div class="shots">
+          {p.shots.map((s, i) => (
+            <Screenshot lang={lang} shot={s} sizes={i === 0 ? undefined : '(min-width: 720px) 440px, 100vw'} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  {
     p.code && (
       <section>
         <CodeWindow lang={lang} code={p.code} />
@@ -144,6 +160,9 @@ const { lang, project: p } = Astro.props;
   }
   .top {
     padding: 24px 0 32px;
+  }
+  :global(.hero-banner) {
+    margin-top: 20px;
   }
   .meta {
     display: flex;

@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import ProjectPanel from './ProjectPanel.astro';
 import type { Lang, LinkKind, Project } from '../data/projects';
 import { t, tx, href, shortTitle } from '../data/site';
 
@@ -21,8 +21,6 @@ const cardLinks = (p.home.links ?? []).map((l) => ({
   label: linkLabel[l.kind],
   href: typeof l.href === 'string' ? l.href : tx(lang, l.href),
 }));
-const { panel } = p.home;
-const shots = (panel.shots ?? []).map((i) => p.shots![i]);
 const num = String(index + 1).padStart(2, '0');
 ---
 
@@ -63,25 +61,7 @@ const num = String(index + 1).padStart(2, '0');
     <a class="case" href={url}>{t(lang, 'view_case')} <span class="arr">→</span></a>
   </div>
 
-  <a class:list={['panel', panel.layout]} href={url} style={`--panel:${panel.bg}`} tabindex="-1" aria-hidden="true">
-    {
-      shots.map((s) => (
-        <Image src={s.src[lang]} alt="" widths={[480, 800, 1200, 1600]} sizes="(min-width: 1100px) 840px, 100vw" format="webp" quality={80} loading="lazy" />
-      ))
-    }
-    {
-      panel.code && (
-        <div class="windows">
-          {panel.code.map((c) => (
-            <div class="win">
-              <div class="bar">{c.label}</div>
-              <pre>{c.source}</pre>
-            </div>
-          ))}
-        </div>
-      )
-    }
-  </a>
+  <ProjectPanel class="slot" lang={lang} project={p} href={url} />
 </article>
 
 <style>
@@ -89,6 +69,9 @@ const num = String(index + 1).padStart(2, '0');
     display: grid;
     gap: 24px;
     scroll-margin-top: 96px;
+  }
+  .row > :global(.slot) {
+    order: -1;
   }
   @media (min-width: 900px) {
     .row {
@@ -99,7 +82,8 @@ const num = String(index + 1).padStart(2, '0');
       grid-column: span 4;
       padding-top: 8px;
     }
-    .panel {
+    .row > :global(.slot) {
+      order: 0;
       grid-column: span 8;
     }
   }
@@ -215,106 +199,4 @@ const num = String(index + 1).padStart(2, '0');
     transform: translateX(4px);
   }
 
-  /* Image panel: each project has its own tinted background */
-  .panel {
-    order: -1;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 260px;
-    padding: 24px;
-    border-radius: 16px;
-    overflow: hidden;
-    background: var(--panel);
-  }
-  /* Pale panels would glare in dark mode; blend every panel toward the page background */
-  @media (prefers-color-scheme: dark) {
-    :global(:root:not([data-theme='light'])) .panel {
-      background: color-mix(in srgb, var(--panel) 45%, var(--bg));
-    }
-  }
-  :global(:root[data-theme='dark']) .panel {
-    background: color-mix(in srgb, var(--panel) 45%, var(--bg));
-  }
-  @media (min-width: 900px) {
-    .panel {
-      order: 0;
-      height: 580px;
-      padding: 48px;
-    }
-  }
-  .panel img {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    transition: transform 0.4s ease;
-  }
-  .panel:hover img {
-    transform: translateY(-4px);
-  }
-  .frame img {
-    max-height: 100%;
-    width: auto;
-    border-radius: 10px;
-    box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);
-  }
-  .bleed {
-    padding: 0;
-  }
-  .bleed img {
-    width: 100%;
-    max-width: 820px;
-  }
-  .pair {
-    gap: 20px;
-    align-items: flex-start;
-  }
-  .pair img {
-    width: 46%;
-    border-radius: 12px;
-    box-shadow: 0 24px 48px rgb(60 40 20 / 0.22);
-  }
-  .pair img:nth-child(2) {
-    margin-top: 12%;
-  }
-  .windows {
-    display: grid;
-    gap: 16px;
-    width: 100%;
-  }
-  @media (min-width: 600px) {
-    .windows {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-  .win {
-    min-width: 0;
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    background: #141414;
-    color: #e8e6df;
-    font-family: var(--mono);
-  }
-  .bar {
-    padding: 10px 16px;
-    border-bottom: 1px solid #2e2e2e;
-    font-size: 12px;
-    color: #9a978e;
-  }
-  .win pre {
-    margin: 0;
-    padding: 16px 20px;
-    font-family: inherit;
-    font-size: 13px;
-    line-height: 1.7;
-    white-space: pre;
-    overflow-x: auto;
-  }
-  @media (max-width: 599px) {
-    .win:first-child {
-      display: none;
-    }
-  }
 </style>

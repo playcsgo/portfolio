@@ -1,0 +1,192 @@
+---
+import { Image } from 'astro:assets';
+import type { Lang, Project } from '../data/projects';
+
+interface Props {
+  lang: Lang;
+  project: Project;
+  /** Card panels link to the case study; the banner on that page does not */
+  href?: string;
+  banner?: boolean;
+  class?: string;
+}
+const { lang, project: p, href, banner = false, class: className } = Astro.props;
+const { panel } = p.home;
+const shots = (panel.shots ?? []).map((i) => p.shots![i]);
+const Tag = href ? 'a' : 'div';
+// Shared name lets the card panel morph into the case-study banner on navigation
+const style = `--panel:${panel.bg}` + (p.banner ? `; view-transition-name: panel-${p.slug}` : '');
+---
+
+<Tag class:list={['panel', panel.layout, { banner }, className]} href={href} style={style} tabindex={href ? -1 : undefined} aria-hidden="true">
+  {
+    shots.map((s) => (
+      <Image src={s.src[lang]} alt="" widths={[480, 800, 1200, 1600]} sizes="(min-width: 1100px) 840px, 100vw" format="webp" quality={80} loading={banner ? 'eager' : 'lazy'} />
+    ))
+  }
+  {
+    panel.code && (
+      <div class="windows">
+        {panel.code.map((c) => (
+          <div class="win">
+            <div class="bar">{c.label}</div>
+            <pre>{c.source}</pre>
+          </div>
+        ))}
+      </div>
+    )
+  }
+</Tag>
+
+<style>
+  /* Image panel: each project has its own tinted background */
+  .panel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 260px;
+    padding: 24px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--panel);
+  }
+  /* Pale panels would glare in dark mode; blend every panel toward the page background */
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .panel {
+      background: color-mix(in srgb, var(--panel) 45%, var(--bg));
+    }
+  }
+  :global(:root[data-theme='dark']) .panel {
+    background: color-mix(in srgb, var(--panel) 45%, var(--bg));
+  }
+  @media (min-width: 900px) {
+    .panel {
+      height: 580px;
+      padding: 48px;
+    }
+  }
+  /* Banner on the case-study page: same artwork, cropped to a short strip */
+  .panel.banner {
+    height: 200px;
+    min-height: 0;
+    align-items: flex-start;
+  }
+  @media (min-width: 900px) {
+    .panel.banner {
+      height: 320px;
+    }
+  }
+  .banner.pair img {
+    width: 38%;
+  }
+  .panel img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    transition: transform 0.4s ease;
+  }
+  .panel:hover img {
+    transform: translateY(-4px);
+  }
+  .frame img {
+    max-height: 100%;
+    width: auto;
+    border-radius: 10px;
+    box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);
+  }
+  .bleed {
+    padding: 0;
+  }
+  .bleed img {
+    width: 100%;
+    max-width: 820px;
+  }
+  .pair {
+    gap: 20px;
+    align-items: flex-start;
+  }
+  .pair img {
+    width: 46%;
+    border-radius: 12px;
+    box-shadow: 0 24px 48px rgb(60 40 20 / 0.22);
+  }
+  .pair img:nth-child(2) {
+    margin-top: 12%;
+  }
+  /* Two landscape shots overlapping on a diagonal */
+  .cascade {
+    display: block;
+    aspect-ratio: 4 / 3;
+  }
+  .cascade img {
+    position: absolute;
+    border-radius: 12px;
+    box-shadow: 0 24px 48px rgb(60 40 20 / 0.22);
+  }
+  .cascade img:nth-child(1) {
+    top: 8%;
+    left: 5%;
+    width: 68%;
+  }
+  .cascade img:nth-child(2) {
+    right: 5%;
+    bottom: 8%;
+    width: 60%;
+  }
+  @media (min-width: 900px) {
+    .cascade {
+      aspect-ratio: auto;
+    }
+  }
+  .banner.cascade {
+    aspect-ratio: auto;
+  }
+  .banner.cascade img:nth-child(1) {
+    width: 52%;
+  }
+  .banner.cascade img:nth-child(2) {
+    width: 44%;
+    bottom: auto;
+    top: 22%;
+  }
+  .windows {
+    display: grid;
+    gap: 16px;
+    width: 100%;
+  }
+  @media (min-width: 600px) {
+    .windows {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .win {
+    min-width: 0;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #141414;
+    color: #e8e6df;
+    font-family: var(--mono);
+  }
+  .bar {
+    padding: 10px 16px;
+    border-bottom: 1px solid #2e2e2e;
+    font-size: 12px;
+    color: #9a978e;
+  }
+  .win pre {
+    margin: 0;
+    padding: 16px 20px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  @media (max-width: 599px) {
+    .win:first-child {
+      display: none;
+    }
+  }
+</style>

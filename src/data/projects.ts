@@ -4,8 +4,10 @@
 import type { ImageMetadata } from 'astro';
 import lmZh from '../assets/shots/line-monitor-zh.png';
 import lmEn from '../assets/shots/line-monitor-en.png';
-import yDiagramZh from '../assets/shots/yoution-diagram-zh.png';
-import yDiagramEn from '../assets/shots/yoution-diagram-en.png';
+import yOutlineZh from '../assets/shots/yoution-outline-zh.png';
+import yOutlineEn from '../assets/shots/yoution-outline-en.png';
+import yNotesZh from '../assets/shots/yoution-notes-zh.png';
+import yNotesEn from '../assets/shots/yoution-notes-en.png';
 import yQuizZh from '../assets/shots/yoution-quiz-zh.png';
 import yQuizEn from '../assets/shots/yoution-quiz-en.png';
 import yPriceZh from '../assets/shots/yoution-pricing-zh.png';
@@ -75,7 +77,7 @@ export interface Project {
     byline: L;
     index: string;
     tags: string[];
-    panel: { bg: string; layout: 'pair' | 'frame' | 'bleed' | 'code'; shots?: number[]; code?: { label: string; source: string }[] };
+    panel: { bg: string; layout: 'pair' | 'cascade' | 'frame' | 'bleed' | 'code'; shots?: number[]; code?: { label: string; source: string }[] };
   };
   tagline: L;
   role: L;
@@ -88,6 +90,8 @@ export interface Project {
   flow?: { title: L; steps: FlowStep[]; note?: L };
   highlights: Highlight[];
   learned?: L[];
+  /** Case study opens with the home panel as a banner (rolling out one project at a time) */
+  banner?: boolean;
   roadmap?: { title: L; intro: L; items: L[] };
 }
 
@@ -95,6 +99,7 @@ export const projects: Project[] = [
   // ─────────────────────────────────────────────── Yoution
   {
     slug: 'yoution',
+    banner: true,
     home: {
       links: [
         { kind: 'web', href: 'https://yoution.app' },
@@ -107,7 +112,7 @@ export const projects: Project[] = [
       byline: { zh: '獨立開發', en: 'Solo' },
       index: 'Next.js · PostgreSQL (Supabase) · Stripe · AI SDK',
       tags: ['Next.js 15', 'PostgreSQL (Supabase)', 'RLS', 'pg_cron', 'Stripe'],
-      panel: { bg: '#EBDCCF', layout: 'pair', shots: [0, 1] },
+      panel: { bg: '#EBDCCF', layout: 'cascade', shots: [0, 1] },
     },
     icon: iconYoution,
     oneLiner: { zh: '把 YouTube 影片轉成示意圖與測驗。', en: 'Turns YouTube videos into diagrams and quizzes.' },
@@ -146,11 +151,19 @@ export const projects: Project[] = [
     links: [{ label: { zh: '官網 yoution.app', en: 'Website yoution.app' }, href: 'https://yoution.app' }],
     shots: [
       {
-        src: { zh: yDiagramZh, en: yDiagramEn },
-        alt: { zh: 'Yoution 由 LLM 產生的架構圖表', en: 'An LLM-generated diagram in Yoution' },
+        src: { zh: yOutlineZh, en: yOutlineEn },
+        alt: { zh: 'Yoution 由 LLM 產生的分段綱要', en: 'An LLM-generated diagram in Yoution' },
         caption: {
-          zh: '貼上一篇系統設計文章，背景產生綱要與圖表（圖表以 SVG 繪製，可縮放）',
-          en: 'Paste an article and the backend generates an outline and a diagram in the background (rendered as scalable SVG)',
+          zh: '貼上一篇文章，背景產生分段綱要，左側目錄可直接跳到各段',
+          en: 'Paste a piece of content and the backend generates an outline and a diagram in the background (rendered as scalable SVG)',
+        },
+      },
+      {
+        src: { zh: yNotesZh, en: yNotesEn },
+        alt: { zh: 'Yoution 筆記列表：標籤分類、測驗、複習提醒', en: 'Yoution notes: tags, quizzes and review reminders' },
+        caption: {
+          zh: '筆記依標籤分類，可以整個標籤一起出題、開啟複習提醒，或讓 LLM 跨文件比對',
+          en: 'Notes are grouped by tag; quiz a whole tag, turn on review reminders, or run an LLM cross-document review',
         },
       },
       {

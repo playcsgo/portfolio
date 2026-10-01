@@ -475,6 +475,40 @@ const { links } = site;
     border: 1px solid var(--border-strong);
     color: var(--text);
   }
+  /* Cross-page transitions: only named elements (a card panel and its banner) animate */
+  @view-transition {
+    navigation: auto;
+  }
+  ::view-transition-group(root) {
+    animation: none;
+  }
+  ::view-transition-group(*) {
+    animation-duration: 0.5s;
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+  }
+  /* Keep the outgoing panel solid and fade the banner in late, so freshly decoded images never flash blank */
+  ::view-transition-old(*) {
+    animation: none;
+  }
+  ::view-transition-new(*) {
+    animation: vt-fade-in 0.2s 0.3s ease both;
+  }
+  @keyframes vt-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*) {
+      animation: none;
+    }
+  }
   .badge {
     display: inline-flex;
     align-items: center;
