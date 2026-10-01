@@ -22,7 +22,19 @@ const num = String(index + 1).padStart(2, '0');
   <div class="text">
     <p class="meta mono">{num} · {p.period} · {tx(lang, p.home.byline)}</p>
     <h2><a href={url}>{shortTitle(lang, p.title)}</a></h2>
-    <p class="blurb">{tx(lang, p.home.blurb)}</p>
+    {
+      p.home.points ? (
+        <>
+          <p class="blurb">{tx(lang, p.home.points.intro)}</p>
+          <div class="barrier">
+            <p class="mono">{t(lang, 'barrier')}</p>
+            <p>{tx(lang, p.home.points.barrier)}</p>
+          </div>
+        </>
+      ) : (
+        p.home.blurb && <p class="blurb">{tx(lang, p.home.blurb)}</p>
+      )
+    }
     <ul class="tags">{p.home.tags.map((s) => <li>{s}</li>)}</ul>
     <div class="links">
       <a class="case" href={url}>{t(lang, 'view_case')} →</a>
@@ -93,6 +105,22 @@ const num = String(index + 1).padStart(2, '0');
     font-size: 17px;
     line-height: 1.65;
     color: var(--body);
+  }
+  .barrier {
+    padding-left: 16px;
+    border-left: 2px solid var(--faint);
+  }
+  .barrier p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+  .barrier .mono {
+    margin-bottom: 4px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
   }
   .links {
     display: flex;

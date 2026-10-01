@@ -66,7 +66,9 @@ export interface Project {
   pain: L;
   /** Home page row: short copy, index stack and the image panel */
   home: {
-    blurb: L;
+    /** One-line product intro plus the technical barrier; projects without a product use blurb */
+    points?: { intro: L; barrier: L };
+    blurb?: L;
     byline: L;
     index: string;
     tags: string[];
@@ -91,7 +93,10 @@ export const projects: Project[] = [
   {
     slug: 'yoution',
     home: {
-      blurb: { zh: '把 YouTube、文章、PDF 變成示意圖與測驗。後端要處理的是：LLM 又慢又貴還會被限流，付費功能還得防濫用。', en: 'Turns YouTube videos, articles and PDFs into diagrams and quizzes. On the backend, LLM calls are slow, costly and rate-limited, and paid features have to resist abuse.' },
+      points: {
+        intro: { zh: '把 YouTube、文章、PDF 總結成綱要、示意圖與測驗，用於篩選及記憶。', en: 'Summarizes YouTube videos, articles and PDFs into outlines, diagrams and quizzes, to help you decide what is worth your time and remember it.' },
+        barrier: { zh: 'LLM 回應時間長又不穩定、供應商會限流、YouTube 影片可能沒有字幕，同時要控制成本、防止惡意濫用，手機 App 要保持輕量。', en: 'LLM responses are slow and unreliable, providers rate-limit, some YouTube videos have no captions, cost and abuse have to stay in check, and the mobile app has to stay lightweight.' },
+      },
       byline: { zh: '獨立開發', en: 'Solo' },
       index: 'Next.js · PostgreSQL (Supabase) · Stripe · AI SDK',
       tags: ['Next.js 15', 'PostgreSQL (Supabase)', 'RLS', 'pg_cron', 'Stripe'],
@@ -236,7 +241,10 @@ export const projects: Project[] = [
   {
     slug: 'mock-mes',
     home: {
-      blurb: { zh: '模擬產線 MES。工作站用 WebSocket 上傳測試結果，後端即時算良率、觸發告警：越晚發現異常，報廢越多。', en: 'A mock MES: stations stream test results over WebSocket, and the backend computes yield and raises alerts in real time. The later a failing station is noticed, the more gets scrapped.' },
+      points: {
+        intro: { zh: '即時監控產線進度與良率，異常自動通報，並由人員認領處理。', en: 'Monitors production-line progress and yield in real time, reports anomalies automatically and lets staff claim and resolve them.' },
+        barrier: { zh: '多個工作站同時送進測試結果，伺服器上的數據要與產線實際情況一致，還要串接通訊軟體即時通知。', en: 'Many stations send results at once, server data has to match what is really happening on the line, and alerts go out through a messaging app.' },
+      },
       byline: { zh: '獨立開發', en: 'Solo' },
       index: 'FastAPI · WebSocket · GraphQL · MongoDB',
       tags: ['FastAPI', 'WebSocket', 'MongoDB async', 'GraphQL', 'pytest'],
@@ -388,7 +396,10 @@ export const projects: Project[] = [
   {
     slug: 'focus-correction',
     home: {
-      blurb: { zh: '專注期間離開 App 就記一次分心。系統不會告訴 App 是鎖螢幕還是切走，所以自己寫了 Swift／Kotlin 原生模組。', en: 'Leaving the app during a session counts as a distraction. The OS won\'t say whether the user locked the screen or switched apps, so I wrote native Swift / Kotlin modules.' },
+      points: {
+        intro: { zh: '記錄分心次數與時間、幫你延長專注的 App，已上架 App Store 與 Google Play。', en: 'An app that tracks how often and how long you get distracted to help you focus longer, live on the App Store and Google Play.' },
+        barrier: { zh: 'UI / UX：專注中的畫面不能打擾使用者，結束後的分心紀錄要一眼看懂。iOS 與 Android 對於分心的判定模式不同。', en: 'UI / UX: the in-session screen has to stay out of the way, and the distraction review has to read at a glance. iOS and Android also detect distractions differently.' },
+      },
       byline: { zh: '獨立開發', en: 'Solo' },
       index: 'React Native · Expo Modules · In-App Purchase',
       tags: ['React Native', 'Expo Modules', 'In-App Purchase', '142 Maestro E2E'],
@@ -481,8 +492,11 @@ export const projects: Project[] = [
   {
     slug: 'async-jobs-rabbitmq',
     home: {
-      blurb: { zh: '每次儲值、升級都是一則 RabbitMQ 訊息，交給背景 worker 處理，API 不會在尖峰時卡住。打開就是訪客帳號，可以直接玩。', en: 'Every top-up and upgrade is a RabbitMQ message handled by background workers, so the API stays responsive at peak. Open it and you are playing as a guest.' },
-      byline: { zh: '個人專案', en: 'Personal project' },
+      points: {
+        intro: { zh: '儲值、升級裝備的小遊戲，打開就能用訪客帳號直接玩。', en: 'A small top-up and gear-upgrade game; open it and you are playing as a guest.' },
+        barrier: { zh: '使用者連點儲值、升級時要正確處理，確保每一筆交易的流程都合乎邏輯。', en: 'Rapid repeated clicks on top-up and upgrade have to be handled correctly, and every transaction has to follow a sound flow.' },
+      },
+      byline: { zh: '個人練習', en: 'learning project' },
       index: 'Express · RabbitMQ · Redis · pm2',
       tags: ['RabbitMQ', 'Express', 'Redis session', 'pm2 workers', 'MongoDB TTL'],
       panel: { bg: '#2B2521', layout: 'frame', shots: [0] },
