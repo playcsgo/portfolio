@@ -475,38 +475,64 @@ const { links } = site;
     border: 1px solid var(--border-strong);
     color: var(--text);
   }
-  /* Cross-page transitions: only named elements (a card panel and its banner) animate */
+  /*
+   * Cross-page transitions. A project's card panel becomes its case-study banner:
+   * the backdrop and each screenshot are named separately so the shots keep their
+   * aspect ratio while they fly. The rest of the page fades out, then fades in
+   * with a small rise; the header stays put.
+   */
   @view-transition {
     navigation: auto;
   }
-  ::view-transition-group(root) {
+  .site-header {
+    view-transition-name: site-header;
+  }
+  ::view-transition-group(site-header) {
     animation: none;
   }
-  ::view-transition-group(*) {
-    animation-duration: 0.5s;
-    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  ::view-transition-old(site-header) {
+    display: none;
   }
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
+  ::view-transition-new(site-header) {
+    animation: none;
+  }
+  ::view-transition-old(root) {
+    animation: vt-fade-out 180ms ease both;
+  }
+  ::view-transition-new(root) {
+    animation: vt-rise-in 320ms cubic-bezier(0.32, 0.72, 0, 1) 160ms both;
+  }
+  ::view-transition-group(.panel-bg),
+  ::view-transition-group(.panel-shot) {
+    animation-duration: 480ms;
+    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  ::view-transition-old(.panel-bg),
+  ::view-transition-new(.panel-bg) {
+    width: 100%;
     height: 100%;
-    object-fit: cover;
-    object-position: top;
   }
-  /* Keep the outgoing panel solid and fade the banner in late, so freshly decoded images never flash blank */
-  ::view-transition-old(*) {
+  /* Same image on both ends: no cross-fade, so a shot still decoding never flashes blank */
+  ::view-transition-old(.panel-shot),
+  ::view-transition-new(.panel-shot) {
     animation: none;
   }
-  ::view-transition-new(*) {
-    animation: vt-fade-in 0.2s 0.3s ease both;
-  }
-  @keyframes vt-fade-in {
-    from {
+  @keyframes vt-fade-out {
+    to {
       opacity: 0;
     }
   }
+  @keyframes vt-rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
-    ::view-transition-group(*) {
-      animation: none;
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
     }
   }
   .badge {
