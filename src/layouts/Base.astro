@@ -1,6 +1,8 @@
 ---
 import type { Lang } from '../data/projects';
 import { site, t, tx, altPath, href, BASE } from '../data/site';
+import { pageUrl, ogImage } from '../data/seo';
+import '../styles/fonts.css';
 
 interface Props {
   lang: Lang;
@@ -8,10 +10,19 @@ interface Props {
   description?: string;
   /** Full-width layout for the home page; project pages keep a reading width */
   wide?: boolean;
+  /** Share image key in public/og/ (a project slug); defaults to the home image */
+  ogSlug?: string;
+  /** JSON-LD object for this page */
+  jsonLd?: object;
 }
-const { lang, title, description, wide = false } = Astro.props;
+const { lang, title, description, wide = false, ogSlug, jsonLd } = Astro.props;
 const pageTitle = title ? `${title} · ${tx(lang, site.name)}` : `${tx(lang, site.name)} · ${tx(lang, site.role)}`;
 const path = Astro.url.pathname;
+const metaDescription = description ?? tx(lang, site.intro);
+// Language-neutral page path, e.g. '/' or '/yoution/'
+const rest = (path.slice(BASE.length).replace(/^\/en(?=\/|$)/, '') || '/').replace(/\/?$/, '/');
+const canonical = pageUrl(lang, rest);
+const image = ogImage(lang, ogSlug);
 const { links } = site;
 ---
 
@@ -22,14 +33,28 @@ const { links } = site;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href={`${BASE}/favicon.svg`} />
     <title>{pageTitle}</title>
-    <meta name="description" content={description ?? tx(lang, site.intro)} />
-    <link rel="alternate" hreflang={lang === 'zh' ? 'en' : 'zh-Hant-TW'} href={altPath(lang, path)} />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
+    <meta name="description" content={metaDescription} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="zh-Hant-TW" href={pageUrl('zh', rest)} />
+    <link rel="alternate" hreflang="en" href={pageUrl('en', rest)} />
+    <link rel="alternate" hreflang="x-default" href={pageUrl('en', rest)} />
+    <meta property="og:type" content={ogSlug ? 'article' : 'profile'} />
+    <meta property="og:site_name" content={lang === 'zh' ? '呂兆中 Sam 作品集' : 'Sam Lu Portfolio'} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={metaDescription} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={image} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={pageTitle} />
+    <meta property="og:locale" content={lang === 'zh' ? 'zh_TW' : 'en_US'} />
+    <meta property="og:locale:alternate" content={lang === 'zh' ? 'en_US' : 'zh_TW'} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={metaDescription} />
+    <meta name="twitter:image" content={image} />
+    <link rel="sitemap" type="application/xml" href={`${BASE}/sitemap.xml`} />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
     <script is:inline>
       // Apply the saved theme before first paint to avoid a flash
       try {

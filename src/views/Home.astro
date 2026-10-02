@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import ProjectRow from '../components/ProjectRow.astro';
 import { projects, type Lang } from '../data/projects';
 import { site, t, tx, shortTitle } from '../data/site';
+import { homeLd } from '../data/seo';
 
 interface Props {
   lang: Lang;
@@ -17,7 +18,7 @@ const glyphs = lang === 'zh' ? [...messy] : messy.split(/(\s+)/).filter(Boolean)
 const yearOf = (period: string) => period.replace(/(\d{4})\.(\d{2}) – \1\.(\d{2})/, '$1.$2–$3');
 ---
 
-<Base lang={lang} wide>
+<Base lang={lang} wide jsonLd={homeLd(lang)}>
   <section class="hero">
     <p class="eyebrow who">{tx(lang, site.name)} — {tx(lang, site.role)}</p>
     <h1>

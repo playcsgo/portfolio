@@ -4,8 +4,8 @@ export const site = {
   name: { zh: '呂兆中 Sam', en: 'Sam Lu' } as L,
   role: { zh: '後端工程師', en: 'Backend Engineer' } as L,
   intro: {
-    zh: '我喜歡把「慢、不可靠、會被濫用」的東西變得穩定：把外部服務隔離在佇列後面、把跟錢有關的規則放進資料庫的原子操作、讓告警只在真正需要的時候響。',
-    en: 'I like making slow, unreliable and abusable things dependable: isolating external services behind queues, putting money-related rules into atomic database operations, and making alerts fire only when they should.',
+    zh: '呂兆中 Sam，後端工程師，10 年以上硬體製造業現場經驗。把模糊的需求整理成扛得住真實世界的系統：Yoution（AI 學習產品）、mock_mes（產線即時監控）、Focus Correction（上架 App）等作品。',
+    en: 'Sam Lu, backend engineer with 10+ years on hardware manufacturing floors. I shape vague requirements into systems that hold up in the real world: Yoution (AI learning product), mock_mes (real-time line monitoring), Focus Correction (shipped app) and more.',
   } as L,
   skills: [
     { group: { zh: '語言', en: 'Languages' } as L, items: ['Python', 'TypeScript', 'JavaScript (Node.js)', 'SQL'] },

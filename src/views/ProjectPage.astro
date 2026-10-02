@@ -5,6 +5,7 @@ import Screenshot from '../components/Screenshot.astro';
 import CodeWindow from '../components/CodeWindow.astro';
 import ProjectPanel from '../components/ProjectPanel.astro';
 import Architecture from '../components/Architecture.astro';
+import { projectLd } from '../data/seo';
 import type { Lang, Project } from '../data/projects';
 import { t, tx, href } from '../data/site';
 
@@ -15,7 +16,7 @@ interface Props {
 const { lang, project: p } = Astro.props;
 ---
 
-<Base lang={lang} title={tx(lang, p.title)} description={tx(lang, p.tagline)}>
+<Base lang={lang} title={tx(lang, p.title)} description={tx(lang, p.tagline)} ogSlug={p.slug} jsonLd={projectLd(lang, p)}>
   <a class="back" href={href(lang, '/#projects')}>← {t(lang, 'back')}</a>
 
   {p.banner && <ProjectPanel class="hero-banner" lang={lang} project={p} banner />}
