@@ -120,6 +120,7 @@ export const projects: Project[] = [
       links: [
         { kind: 'web', href: 'https://yoution.app' },
         { kind: 'chrome', href: 'https://chromewebstore.google.com/detail/yoution/faplonbnkjffeblcbfmilifkplkpijik' },
+        { kind: 'android', href: 'https://play.google.com/store/apps/details?id=app.yoution' },
       ],
       points: {
         intro: { zh: '把 YouTube、文章、PDF 總結成綱要、示意圖與測驗，用於篩選及記憶，並提供後台管理。', en: 'Summarizes YouTube videos, articles and PDFs into outlines, diagrams and quizzes, to help you decide what is worth your time and remember it, with an admin back office.' },
@@ -164,7 +165,11 @@ export const projects: Project[] = [
       { value: '9', label: { zh: '介面語言', en: 'UI languages' } },
       { value: '340+', label: { zh: 'commits', en: 'commits' } },
     ],
-    links: [{ label: { zh: '官網 yoution.app', en: 'Website yoution.app' }, href: 'https://yoution.app' }],
+    links: [
+      { label: { zh: '官網 yoution.app', en: 'Website yoution.app' }, href: 'https://yoution.app' },
+      { label: { zh: 'Chrome 擴充功能', en: 'Chrome extension' }, href: 'https://chromewebstore.google.com/detail/yoution/faplonbnkjffeblcbfmilifkplkpijik' },
+      { label: { zh: 'Google Play', en: 'Google Play' }, href: 'https://play.google.com/store/apps/details?id=app.yoution' },
+    ],
     shots: [
       {
         src: { zh: yOutlineZh, en: yOutlineEn },
