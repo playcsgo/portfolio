@@ -53,6 +53,14 @@ export interface CodeSample {
   source: string;
 }
 
+/** One reliability fix shown as a before/after row, linked to the commits that made it */
+export interface Technique {
+  title: L;
+  before: L;
+  after: L;
+  commits: string[];
+}
+
 export interface ArchBox {
   name: L;
   tech: string[];
@@ -103,6 +111,8 @@ export interface Project {
   credit?: L;
   /** Replaces the role/stack facts and the flow with one system diagram */
   architecture?: Architecture;
+  /** Before/after table of backend techniques, with the repo they link into */
+  techniques?: { repo: string; rows: Technique[]; method: { body: L; commits: string[] } };
   flow?: { title: L; steps: FlowStep[]; note?: L };
   highlights: Highlight[];
   learned?: L[];
@@ -602,15 +612,15 @@ export const projects: Project[] = [
     period: '2024.07',
     title: { zh: '點裝備系統（RabbitMQ）', en: 'Gear Upgrade Demo (RabbitMQ)' },
     tagline: {
-      zh: '把耗時或高併發的操作從 API 拆到背景 worker。線上 demo 是 Express 版：打開就是訪客帳號，可以直接儲值、升級裝備。之後的 Fastify 版補上可靠投遞、RPC 回覆與依賴注入。',
-      en: 'Moving slow or high-concurrency work out of the API into background workers. The live demo is the Express version: open it and you get a guest account to top up and upgrade gear right away. A later Fastify version adds reliable delivery, RPC replies and dependency injection.',
+      zh: '把耗時或高併發的操作從 API 拆到背景 worker，再一步步補上原子操作、冪等、可靠投遞與限流。打開就是訪客帳號，可以直接儲值、升級裝備。',
+      en: 'Moving slow or high-concurrency work out of the API into background workers, then adding atomic updates, idempotency, reliable delivery and rate limiting step by step. Open it and you get a guest account to top up and upgrade gear right away.',
     },
-    role: { zh: '個人練習專案，兩個 repo 皆為獨立開發', en: 'Personal learning project; both repos built solo' },
-    stack: ['Node.js', 'Express', 'Fastify', 'RabbitMQ (amqplib)', 'MongoDB / Mongoose', 'Redis', 'pm2', 'awilix (DI)', 'worker_threads', 'Render'],
+    role: { zh: '個人練習專案，獨立開發', en: 'Personal learning project, built solo' },
+    stack: ['Node.js', 'Express', 'RabbitMQ (amqplib)', 'MongoDB / Mongoose', 'Redis', 'pm2', 'Render'],
     links: [
       { label: { zh: 'Live demo', en: 'Live demo' }, href: 'https://gear-demo.onrender.com' },
-      { label: { zh: 'GitHub：Express 版（demo）', en: 'GitHub: Express version (demo)' }, href: 'https://github.com/playcsgo/cv_equipment' },
-      { label: { zh: 'GitHub：Fastify 版', en: 'GitHub: Fastify version' }, href: 'https://github.com/playcsgo/fastify_prac_1' },
+      { label: { zh: 'GitHub', en: 'GitHub' }, href: 'https://github.com/playcsgo/cv_equipment' },
+      { label: { zh: 'GitHub：Fastify 練習版', en: 'GitHub: Fastify practice version' }, href: 'https://github.com/playcsgo/fastify_prac_1' },
     ],
     shots: [
       {
@@ -622,23 +632,7 @@ export const projects: Project[] = [
         },
       },
     ],
-    code: {
-      file: 'config/rabbitmq.js',
-      lang: 'javascript',
-      caption: {
-        zh: 'Fastify 版的 consumer：prefetch(1) 一次只拿一個任務，做完才手動 ack',
-        en: 'Fastify-version consumer: prefetch(1) takes one job at a time and acks only when done',
-      },
-      source: `async consumeQueue(queueName, callback) {
-  const channel = await this.getChannel()
-  await channel.assertQueue(queueName, { durable: true })
-  channel.prefetch(1)
-  channel.consume(queueName, (msg) => {
-    callback(msg, () => channel.ack(msg))
-  }, { noAck: false })
-}`,
-    },
-    credit: { zh: '個人練習專案，兩個 repo 皆為獨立開發', en: 'Personal learning project; both repos built solo' },
+    credit: { zh: '個人練習專案，獨立開發', en: 'Personal learning project, built solo' },
     architecture: {
       path: [
         {
@@ -656,80 +650,77 @@ export const projects: Project[] = [
         { box: { name: { zh: '資料庫', en: 'Database' }, tech: ['MongoDB Atlas', 'Mongoose'], note: { zh: 'TTL index 一小時後自動刪除訪客', en: 'A TTL index removes guests after an hour' } } },
       ],
       side: [
-        { name: { zh: 'Fastify 版', en: 'Fastify version' }, tech: ['Fastify', 'awilix', 'worker_threads'], note: { zh: '手動 ack、RPC 回覆、fanout 與依賴注入', en: 'Manual acks, RPC replies, fanout and dependency injection' } },
         { name: { zh: '部署', en: 'Deployment' }, tech: ['Render'], note: { zh: 'web 與 worker 跑在同一個服務', en: 'Web and workers run on one service' } },
       ],
+    },
+    techniques: {
+      repo: 'https://github.com/playcsgo/cv_equipment',
+      rows: [
+        {
+          title: { zh: '原子操作：不在程式裡讀出、加減、寫回', en: 'Atomic updates instead of read-modify-write' },
+          before: { zh: 'worker 讀出餘額、加減後存回；兩個請求同時進來，後寫的會蓋掉先寫的', en: 'Workers read the balance, changed it and saved it back; with two concurrent requests the later write overwrote the earlier one' },
+          after: { zh: '用 $inc 讓 MongoDB 直接在現有值上加減；「錢夠不夠、等級滿了沒」寫進查詢條件，不成立就不改', en: '$inc lets MongoDB change the value in place; "enough gems, below max level" lives in the query, so nothing changes when it fails' },
+          commits: ['2785a309e55c43f168ebfbba6e80bbc3c6bb3263'],
+        },
+        {
+          title: { zh: '處理成功才 ack＋prefetch', en: 'Ack only after success, with prefetch' },
+          before: { zh: 'noAck: true，RabbitMQ 一送出就刪除；worker 處理到一半當掉，訊息永遠消失', en: 'With noAck: true RabbitMQ deleted a message on delivery; a worker crashing mid-task lost it for good' },
+          after: { zh: 'handler 成功才 ack、失敗 nack，prefetch(10)；強制結束 worker 後，10 則未確認的訊息全部回到佇列由下一個 worker 接手', en: 'Ack on success, nack on failure, prefetch(10); killing a worker returned all 10 unacked messages to the queue for the next worker' },
+          commits: ['9bce79c5868b521c12f26f9dacd83ce9417bc7b5'],
+        },
+        {
+          title: { zh: '訊息持久化＋publisher confirm＋自動重連', en: 'Persistent messages, publisher confirms, reconnects' },
+          before: { zh: 'RabbitMQ 重啟後，5 則待處理訊息歸零；之後的儲值請求一直卡住沒有回應', en: 'After a RabbitMQ restart the 5 queued messages were gone, and the next top-up request hung forever' },
+          after: { zh: '訊息標 persistent，等 RabbitMQ confirm 才回應使用者；斷線時清掉快取的 channel，下次呼叫自動重連', en: 'Messages are persistent and the user gets a response only after RabbitMQ confirms; a dropped connection clears the cached channel and the next call reconnects' },
+          commits: ['e778d6ecb99df386aac03c93bcddefa6d09797f0'],
+        },
+        {
+          title: { zh: '冪等：topupId＋狀態機＋交易', en: 'Idempotency: topupId, a state machine, a transaction' },
+          before: { zh: '重送的訊息可能讓同一筆儲值入帳兩次；金額只在前端驗證，用 HTTP 直接送負數、小數、超額，餘額從 10000 變成 55002', en: 'A redelivered message could credit a top-up twice, and amounts were only checked in the browser: raw HTTP with negative, fractional and oversized amounts took a balance from 10,000 to 55,002' },
+          after: { zh: '頁面產生 topupId 當冪等鍵，狀態只能 pending → done 一次，入帳與改狀態在同一個交易；金額在伺服器驗證。升級同樣做冪等，骰子在交易外只擲一次', en: 'The page issues a topupId as the idempotency key, status moves pending → done once, and crediting and the status change share one transaction; amounts are validated on the server. Upgrades are idempotent too, with the dice rolled once outside the transaction' },
+          commits: ['10d307bb7f899d0784c771af94e71bca289c9145', '92aa029aba6e3cd901e31df414d4629e0877776b'],
+        },
+        {
+          title: { zh: 'DLQ＋有限次數重試', en: 'Dead-letter queue and bounded retries' },
+          before: { zh: '處理失敗的訊息只能丟掉，或無限重試卡住佇列', en: 'A failing message could only be dropped or retried forever, clogging the queue' },
+          after: { zh: '暫時性錯誤用指數退避重試 3 次；訊息本身有問題（例如 topupId 是物件，可能造成 NoSQL injection）直接進 DLQ，修好之後可以搬回重跑', en: 'Transient errors retry 3 times with exponential backoff; a bad message (say a topupId that is an object, a NoSQL injection risk) goes straight to the DLQ and can be replayed after a fix' },
+          commits: ['2d5928e3f039a8d9c652dc939f8735daec006542'],
+        },
+        {
+          title: { zh: 'Redis 滑動視窗限流', en: 'Sliding-window rate limiting in Redis' },
+          before: { zh: '儲值、升級沒有次數上限，用腳本就能大量送出', en: 'Top-ups and upgrades had no limit, so a script could flood them' },
+          after: { zh: '使用者每分鐘 120 次、IP 每分鐘 1000 次兩層限制，一段 Lua 腳本在 Redis 裡一次原子判斷，任一層超過就整筆不計數；IPv6 以 /56 計算', en: 'Two layers, 120 per user and 1,000 per IP each minute, checked atomically in one Lua script; if any layer is over, nothing is counted. IPv6 counts per /56' },
+          commits: ['7ca0ba688395ee15bb73e4738cfb7432c448f287'],
+        },
+      ],
+      method: {
+        body: {
+          zh: '每一步都先寫一支重現腳本，證明問題存在、記下修改前的數字；修改後用同一支腳本驗證，最後所有腳本一起跑一次回歸。',
+          en: 'Every step starts with a script that reproduces the problem and records the before numbers; the same script verifies the fix, and all scripts run together as a final regression.',
+        },
+        commits: ['1fb703095f61a430fd42902a3130dcdd0aac9a25', 'b1706074784a370f252345d5389d212718aa1747'],
+      },
     },
     highlights: [
       {
         title: { zh: '使用者連點儲值、升級', en: 'Users clicking top-up or upgrade repeatedly' },
         body: {
-          zh: '每次點擊都是一則獨立的佇列訊息，由 worker 依序處理，API 不會被連點塞住；點數不足時升級按鈕直接停用。目前 worker 以「讀出→修改→存回」更新，同一使用者的訊息被兩個 worker 同時處理時會有競態，下一版改用 $inc 原子更新。',
-          en: 'Every click is its own queued message handled by workers in order, so rapid clicks never clog the API, and upgrade buttons are disabled without enough gems. Workers still update with read-modify-write, which races when two workers take the same user; the next version moves to atomic $inc updates.',
+          zh: '每次操作都帶一個冪等鍵（topupId／levelupId），重複送出、網路重送或訊息重投都只會處理一次；升級的骰子在交易外只擲一次，不會因為重跑多給機會。寫入端點另有 Redis 限流。',
+          en: 'Every action carries an idempotency key (topupId / levelupId), so double clicks, network retries and redelivered messages are processed once, and an upgrade rolls its dice once outside the transaction. Write endpoints are also rate-limited in Redis.',
         },
-        ref: 'worker/worker-levelup.js',
       },
       {
         title: { zh: '確保每一筆交易的流程合乎邏輯', en: 'Every transaction follows a sound flow' },
         body: {
-          zh: '路由只接受白名單內的動作；worker 套用前再檢查等級上限與餘額（每次升級 500 點），不符合就不做任何變更。',
-          en: 'Routes accept only allowlisted actions, and workers re-check the level cap and balance (500 gems per upgrade) before applying, changing nothing otherwise.',
+          zh: '扣款、升級與狀態更新放在同一個 MongoDB 交易內，「錢夠不夠、等級滿了沒」寫進查詢條件；金額與動作都在伺服器驗證，worker 也不信任訊息內容。',
+          en: 'Charging, upgrading and the status change share one MongoDB transaction, with "enough gems, below max level" in the query itself; amounts and actions are validated on the server, and workers do not trust message payloads.',
         },
-        ref: 'routes/modules/gearup.js',
-      },
-      {
-        title: { zh: '三種訊息模式', en: 'Three messaging patterns' },
-        body: {
-          zh: 'Work queue：下注請求丟進佇列，多個 worker 分攤處理。Publish/Subscribe：監控 middleware 把每個請求發到 fanout exchange，由不同 worker 各自寫入短期與長期歷史。RPC：建立帳號時帶上 replyTo 與 correlationId，worker 完成後把結果回傳給原本的請求。',
-          en: 'Work queue: bets are queued and shared across workers. Publish/Subscribe: a monitoring middleware publishes every request to a fanout exchange, and separate workers write short- and long-term history. RPC: sign-up sends replyTo and correlationId so the worker can return the created user to the original request.',
-        },
-        ref: 'config/rabbitmq.js',
-      },
-      {
-        title: { zh: '從會掉訊息到可靠投遞', en: 'From lossy to reliable delivery' },
-        body: {
-          zh: 'Express 版用 noAck: true，worker 一收到訊息就視為完成，處理途中當機訊息就消失了。Fastify 版改成 noAck: false、手動 ack，並設定 prefetch(1)，確保每個 worker 一次只拿一個任務、做完才確認。',
-          en: 'The Express version used noAck: true, so a message counted as done on receipt and was lost if the worker crashed mid-task. The Fastify version switched to noAck: false with manual acks and prefetch(1), so each worker takes one job at a time and confirms only when finished.',
-        },
-        ref: 'workers/worker1.js',
-      },
-      {
-        title: { zh: '用 awilix 做依賴注入', en: 'Dependency injection with awilix' },
-        body: {
-          zh: 'Controller、worker、RabbitMQ 連線與 model 都註冊在 DI container，依生命週期分成 singleton 與 scoped。元件之間不直接 require 彼此，測試時可以替換依賴。',
-          en: 'Controllers, workers, the RabbitMQ connection and models are registered in a DI container as singletons or scoped instances. Components never require each other directly, so dependencies can be swapped in tests.',
-        },
-        ref: 'awilixSetup.js',
-      },
-      {
-        title: { zh: 'CPU 密集工作：單執行緒 vs worker_threads', en: 'CPU-bound work: single thread vs worker_threads' },
-        body: {
-          zh: '用遞迴 Fibonacci 比較：同樣 5 個計算，在 event loop 上只能排隊執行；丟到 worker_threads 則能真正平行，同時也讓 API 不會被卡住。',
-          en: 'A recursive Fibonacci benchmark: five computations queue up on the event loop, while worker_threads run them truly in parallel and keep the API responsive.',
-        },
-        ref: 'fib-controller.js',
       },
     ],
-    roadmap: {
-      title: { zh: '下一版（v2）', en: 'Next (v2)' },
-      intro: {
-        zh: '線上 demo 目前是 v1 的 worker 邏輯，接下來把 Fastify 版學到的做法搬回來：',
-        en: 'The live demo still runs the v1 worker logic. Next, it gets what I learned in the Fastify version:',
-      },
-      items: [
-        { zh: 'worker 改成手動 ack＋prefetch，當機時訊息會重新投遞', en: 'Manual acks with prefetch, so messages are redelivered if a worker crashes' },
-        { zh: '餘額與等級改用 $inc 原子更新，消除多個 worker 的競態條件', en: 'Atomic $inc updates for balance and levels, removing the race between workers' },
-        { zh: '頁面改成輪詢任務結果，取代固定等待 300ms', en: 'Poll for job results instead of a fixed 300ms wait' },
-      ],
-    },
     learned: [
       {
-        zh: 'Fastify 的 async hook 不能再呼叫 done()，否則 handler 會執行兩次，這個 bug 讓我讀懂了 Fastify 的 hook 生命週期。',
-        en: 'A Fastify async hook must not also call done(), or the handler runs twice. Tracking down that bug taught me the Fastify hook lifecycle.',
-      },
-      {
-        zh: '回頭看，worker 用「讀出→修改→存回」更新餘額，多個 worker 同時處理同一位使用者會有競態條件；正確做法是用 MongoDB 的 $inc 原子更新。',
-        en: 'In hindsight, workers updating balances with read-modify-write race when several handle the same user; the right fix is an atomic MongoDB $inc.',
+        zh: '最早的 worker 用「讀出→修改→存回」更新餘額，多個 worker 同時處理同一位使用者就會互相覆蓋；改成 $inc 原子更新之後，同一支併發腳本就再也重現不出來。',
+        en: 'The first workers updated balances with read-modify-write, so concurrent workers overwrote each other; after switching to atomic $inc, the same concurrency script could no longer reproduce it.',
       },
     ],
   },

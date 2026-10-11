@@ -1,0 +1,171 @@
+---
+import type { Lang, Project } from '../data/projects';
+import { t, tx } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  techniques: NonNullable<Project['techniques']>;
+}
+const { lang, techniques } = Astro.props;
+const commitUrl = (sha: string) => `${techniques.repo}/commit/${sha}`;
+---
+
+<table class="techniques">
+  <thead>
+    <tr>
+      <th scope="col">{t(lang, 'tech_col')}</th>
+      <th scope="col">{t(lang, 'before')}</th>
+      <th scope="col">{t(lang, 'after')}</th>
+      <th scope="col">commit</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      techniques.rows.map((r, i) => (
+        <tr>
+          <th scope="row">
+            <span class="n mono">{String(i + 1).padStart(2, '0')}</span>
+            {tx(lang, r.title)}
+          </th>
+          <td class="before" data-label={t(lang, 'before')}>{tx(lang, r.before)}</td>
+          <td class="after" data-label={t(lang, 'after')}>{tx(lang, r.after)}</td>
+          <td class="commits">
+            {r.commits.map((sha) => (
+              <a class="mono" href={commitUrl(sha)} target="_blank" rel="noopener">
+                {sha.slice(0, 7)} ↗
+              </a>
+            ))}
+          </td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>
+
+<div class="method">
+  <h3>{t(lang, 'method')}</h3>
+  <p>{tx(lang, techniques.method.body)}</p>
+  <p class="commits">
+    {
+      techniques.method.commits.map((sha) => (
+        <a class="mono" href={commitUrl(sha)} target="_blank" rel="noopener">
+          {sha.slice(0, 7)} ↗
+        </a>
+      ))
+    }
+  </p>
+</div>
+
+<style>
+  .techniques {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+  }
+  thead th {
+    padding: 0 12px 10px 0;
+    border-bottom: 1px solid var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-align: left;
+    color: var(--faint);
+  }
+  tbody th,
+  td {
+    padding: 16px 16px 16px 0;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  tbody th {
+    width: 22%;
+    font-weight: 600;
+  }
+  .n {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent);
+  }
+  .before {
+    width: 30%;
+    color: var(--muted);
+  }
+  .after {
+    width: 36%;
+  }
+  .commits a {
+    display: block;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--accent);
+  }
+  .commits a + a {
+    margin-top: 4px;
+  }
+  /* Phones: each row becomes a small card with labelled before/after */
+  @media (max-width: 719px) {
+    thead {
+      display: none;
+    }
+    tr,
+    tbody th,
+    td,
+    .before,
+    .after {
+      display: block;
+      width: auto;
+    }
+    tr {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody th,
+    td {
+      padding: 0;
+      border: 0;
+    }
+    td {
+      margin-top: 10px;
+    }
+    td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--faint);
+    }
+    .commits {
+      display: flex;
+      gap: 16px;
+    }
+    .commits a + a {
+      margin-top: 0;
+    }
+  }
+  .method {
+    margin-top: 24px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .method h3 {
+    margin: 0 0 8px;
+    font-size: 17px;
+  }
+  .method p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .method .commits {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+  }
+</style>

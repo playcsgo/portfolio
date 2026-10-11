@@ -1,0 +1,211 @@
+---
+// Architecture and data flow of the gear demo: one top-up or upgrade from the form to the database
+import type { Lang } from '../data/projects';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const copy = {
+  zh: {
+    title: '點裝備系統架構與資料流',
+    desc: '瀏覽器送出表單，Web 先用 Redis 限流，在 MongoDB 建立 pending 紀錄，再把持久化訊息送進 RabbitMQ 並等待確認；worker 取出訊息後在交易內入帳，成功才 ack，重試三次仍失敗的訊息進入 DLQ；瀏覽器輪詢處理結果。',
+    browser: '瀏覽器', browserSub: '表單帶 topupId／levelupId',
+    submit: '① 送出（POST）', poll: '⑦ 輪詢結果',
+    web: 'Web（Express＋pm2）', webSub: '驗證、冪等鍵、送出訊息',
+    redisSub: 'session＋限流計數',
+    publish: '④ persistent 訊息，等 confirm',
+    mqSub: '儲值、升級各一條 durable queue',
+    deliver: '⑤ 投遞，prefetch 10',
+    workerSub: '處理成功才 ack，失敗重試',
+    dlqSub: '重試 3 次仍失敗', replay: '修好後搬回',
+    tx: '⑥ 交易：pending→done＋$inc',
+    mongo: 'MongoDB（replica set）', mongoSub: '使用者、儲值與升級紀錄',
+    create: ['③ 建立', 'pending'],
+    legend: [['程式', 170], ['儲存與佇列', 240], ['失敗處理', 338], ['非主要流程', 420]],
+  },
+  en: {
+    title: 'Gear demo architecture and data flow',
+    desc: 'The browser submits a form; the web process rate-limits in Redis, creates a pending record in MongoDB and publishes a persistent message to RabbitMQ, waiting for the confirm. A worker credits it inside a transaction and acks only on success; messages that still fail after three tries go to the DLQ. The browser polls for the result.',
+    browser: 'Browser', browserSub: 'Form carries topupId / levelupId',
+    submit: '① Submit (POST)', poll: '⑦ Poll result',
+    web: 'Web (Express + pm2)', webSub: 'Validate, dedupe, publish',
+    redisSub: 'Sessions, rate limits',
+    publish: '④ Persistent message, await confirm',
+    mqSub: 'One durable queue per action',
+    deliver: '⑤ Deliver, prefetch 10',
+    workerSub: 'Ack only on success, retry',
+    dlqSub: 'After 3 failed tries', replay: 'Replay after fix',
+    tx: '⑥ Transaction: pending→done + $inc',
+    mongo: 'MongoDB (replica set)', mongoSub: 'Users, top-ups, upgrades',
+    create: ['③ Create', 'pending'],
+    legend: [['Process', 170], ['Storage and queues', 250], ['Failure handling', 392], ['Side path', 520]],
+  },
+}[lang];
+const [lp, ls, lf, lside] = copy.legend as [string, number][];
+---
+
+<figure class="gear-diagram">
+  <svg viewBox="0 0 680 548" role="img" aria-labelledby="gear-title gear-desc">
+    <title id="gear-title">{copy.title}</title>
+    <desc id="gear-desc">{copy.desc}</desc>
+    <defs>
+      <marker id="gear-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+      </marker>
+    </defs>
+
+    <g class="node client">
+      <rect x="170" y="40" width="260" height="56" rx="8"></rect>
+      <text class="title" x="300" y="59">{copy.browser}</text>
+      <text class="sub" x="300" y="79">{copy.browserSub}</text>
+    </g>
+
+    <line class="arr" x1="262" y1="96" x2="262" y2="134"></line>
+    <text class="label end" x="254" y="116">{copy.submit}</text>
+    <line class="arr dashed" x1="350" y1="96" x2="350" y2="134"></line>
+    <text class="label" x="358" y="116">{copy.poll}</text>
+
+    <g class="node process">
+      <rect x="170" y="136" width="260" height="56" rx="8"></rect>
+      <text class="title" x="300" y="155">{copy.web}</text>
+      <text class="sub" x="300" y="175">{copy.webSub}</text>
+    </g>
+
+    <g class="node store">
+      <rect x="480" y="136" width="160" height="56" rx="8"></rect>
+      <text class="title" x="560" y="155">Redis</text>
+      <text class="sub" x="560" y="175">{copy.redisSub}</text>
+    </g>
+    <line class="arr" x1="430" y1="164" x2="478" y2="164"></line>
+    <text class="label mid" x="454" y="152">②</text>
+
+    <line class="arr" x1="300" y1="192" x2="300" y2="230"></line>
+    <text class="label" x="308" y="212">{copy.publish}</text>
+
+    <g class="node store">
+      <rect x="170" y="232" width="260" height="56" rx="8"></rect>
+      <text class="title" x="300" y="251">RabbitMQ</text>
+      <text class="sub" x="300" y="271">{copy.mqSub}</text>
+    </g>
+
+    <line class="arr" x1="300" y1="288" x2="300" y2="326"></line>
+    <text class="label" x="308" y="308">{copy.deliver}</text>
+
+    <g class="node process">
+      <rect x="170" y="328" width="260" height="56" rx="8"></rect>
+      <text class="title" x="300" y="347">Worker ×2</text>
+      <text class="sub" x="300" y="367">{copy.workerSub}</text>
+    </g>
+
+    <g class="node fail">
+      <rect x="480" y="328" width="160" height="56" rx="8"></rect>
+      <text class="title" x="560" y="347">DLQ</text>
+      <text class="sub" x="560" y="367">{copy.dlqSub}</text>
+    </g>
+    <line class="arr" x1="430" y1="356" x2="478" y2="356"></line>
+    <path class="arr dashed" d="M560 328 L560 260 L432 260"></path>
+    <text class="label" x="568" y="300">{copy.replay}</text>
+
+    <line class="arr" x1="300" y1="384" x2="300" y2="422"></line>
+    <text class="label" x="308" y="404">{copy.tx}</text>
+
+    <g class="node store">
+      <rect x="170" y="424" width="260" height="56" rx="8"></rect>
+      <text class="title" x="300" y="443">{copy.mongo}</text>
+      <text class="sub" x="300" y="463">{copy.mongoSub}</text>
+    </g>
+
+    <path class="arr" d="M170 164 L140 164 L140 452 L168 452"></path>
+    <text class="label end" x="132" y="300">{copy.create[0]}</text>
+    <text class="label end" x="132" y="318">{copy.create[1]}</text>
+
+    <g class="legend">
+      <rect class="process" x={lp[1]} y="512" width="12" height="12" rx="2"></rect>
+      <text class="label" x={lp[1] + 18} y="518">{lp[0]}</text>
+      <rect class="store" x={ls[1]} y="512" width="12" height="12" rx="2"></rect>
+      <text class="label" x={ls[1] + 18} y="518">{ls[0]}</text>
+      <rect class="fail" x={lf[1]} y="512" width="12" height="12" rx="2"></rect>
+      <text class="label" x={lf[1] + 18} y="518">{lf[0]}</text>
+      <line class="arr dashed plain" x1={lside[1]} y1="518" x2={lside[1] + 30} y2="518"></line>
+      <text class="label" x={lside[1] + 38} y="518">{lside[0]}</text>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .gear-diagram {
+    margin: 0;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  svg {
+    display: block;
+    width: 100%;
+    max-width: 760px;
+    height: auto;
+    margin: 0 auto;
+    font-family: var(--sans);
+  }
+  rect {
+    stroke-width: 1;
+  }
+  .client rect,
+  rect.client {
+    fill: var(--surface-2);
+    stroke: var(--border-strong);
+  }
+  .process rect,
+  rect.process {
+    fill: var(--accent-soft);
+    stroke: var(--accent);
+  }
+  .store rect,
+  rect.store {
+    fill: var(--surface-2);
+    stroke: var(--faint);
+  }
+  .fail rect,
+  rect.fail {
+    fill: var(--warn-soft);
+    stroke: var(--warn);
+  }
+  text {
+    dominant-baseline: central;
+  }
+  .title {
+    font-size: 14px;
+    font-weight: 600;
+    fill: var(--text);
+    text-anchor: middle;
+  }
+  .sub {
+    font-size: 12px;
+    fill: var(--muted);
+    text-anchor: middle;
+  }
+  .label {
+    font-size: 12px;
+    fill: var(--muted);
+  }
+  .label.end {
+    text-anchor: end;
+  }
+  .label.mid {
+    text-anchor: middle;
+  }
+  .arr {
+    fill: none;
+    stroke: var(--faint);
+    stroke-width: 1.5;
+    marker-end: url(#gear-arrow);
+  }
+  .arr.plain {
+    marker-end: none;
+  }
+  .dashed {
+    stroke-dasharray: 4 3;
+  }
+</style>

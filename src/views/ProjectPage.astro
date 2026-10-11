@@ -5,6 +5,8 @@ import Screenshot from '../components/Screenshot.astro';
 import CodeWindow from '../components/CodeWindow.astro';
 import ProjectPanel from '../components/ProjectPanel.astro';
 import Architecture from '../components/Architecture.astro';
+import GearDiagram from '../components/GearDiagram.astro';
+import TechniqueTable from '../components/TechniqueTable.astro';
 import { projectLd } from '../data/seo';
 import type { Lang, Project } from '../data/projects';
 import { t, tx, href } from '../data/site';
@@ -14,6 +16,8 @@ interface Props {
   project: Project;
 }
 const { lang, project: p } = Astro.props;
+// Hand-drawn system diagram shown right under the header; other pages keep the box diagram
+const leadDiagram = p.slug === 'async-jobs-rabbitmq';
 ---
 
 <Base lang={lang} title={tx(lang, p.title)} description={tx(lang, p.tagline)} ogSlug={p.slug} jsonLd={projectLd(lang, p)}>
@@ -41,6 +45,15 @@ const { lang, project: p } = Astro.props;
       )
     }
   </header>
+
+  {
+    leadDiagram && (
+      <section class="lead-diagram">
+        <h2>{t(lang, 'architecture')}</h2>
+        <GearDiagram lang={lang} />
+      </section>
+    )
+  }
 
   {
     !p.banner && p.shots && (
@@ -90,7 +103,7 @@ const { lang, project: p } = Astro.props;
   }
 
   {
-    p.architecture && (
+    p.architecture && !leadDiagram && (
       <section>
         <h2>{t(lang, 'architecture')}</h2>
         <Architecture lang={lang} arch={p.architecture} />
@@ -99,6 +112,15 @@ const { lang, project: p } = Astro.props;
   }
 
   {p.flow && <section><Flow lang={lang} flow={p.flow} /></section>}
+
+  {
+    p.techniques && (
+      <section>
+        <h2>{t(lang, 'techniques')}</h2>
+        <TechniqueTable lang={lang} techniques={p.techniques} />
+      </section>
+    )
+  }
 
   <section>
     <h2>{t(lang, p.home.points ? 'answers' : 'highlights')}</h2>
@@ -180,6 +202,9 @@ const { lang, project: p } = Astro.props;
   }
   .top {
     padding: 24px 0 32px;
+  }
+  .lead-diagram {
+    margin: 0 0 40px;
   }
   :global(.hero-banner) {
     margin-top: 20px;
