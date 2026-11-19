@@ -3,7 +3,7 @@ import { pageUrl } from '../data/seo';
 
 // Every page in both languages, each listing its translation for hreflang
 export function GET() {
-  const paths = ['/', ...projects.map((p) => `/${p.slug}/`)];
+  const paths = ['/', ...projects.flatMap((p) => [`/${p.slug}/`, ...(p.topics ?? []).filter((tp) => tp.parts).map((tp) => `/${p.slug}/${tp.id}/`)])];
   const urls = paths.flatMap((path) =>
     (['zh', 'en'] as const).map(
       (lang) => `  <url>

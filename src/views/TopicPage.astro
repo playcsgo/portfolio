@@ -1,0 +1,90 @@
+---
+import Base from '../layouts/Base.astro';
+import TopicBlock from '../components/TopicBlock.astro';
+import type { Lang, Project, Topic } from '../data/projects';
+import { t, tx, href, shortTitle } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  project: Project;
+  topic: Topic;
+}
+const { lang, project: p, topic: tp } = Astro.props;
+const title = `${tx(lang, tp.title)} · ${shortTitle(lang, p.title)}`;
+---
+
+<Base lang={lang} title={title} description={tx(lang, tp.body[0])} ogSlug={p.slug}>
+  <a class="back" href={href(lang, `/${p.slug}/#${tp.id}`)}>← {shortTitle(lang, p.title)}</a>
+
+  <header class="top">
+    <h1>{tx(lang, tp.title)}</h1>
+    {tp.body.map((b) => <p class="lede">{tx(lang, b)}</p>)}
+  </header>
+
+  {
+    tp.parts && (
+      <nav class="toc" aria-label={t(lang, 'on_this_page')}>
+        <span class="eyebrow">{t(lang, 'on_this_page')}</span>
+        <ol>
+          {tp.parts.map((pt) => (
+            <li>
+              <a href={`#${pt.id}`}>{tx(lang, pt.title)}</a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    )
+  }
+
+  {tp.parts?.map((pt, i) => <TopicBlock lang={lang} part={pt} index={i + 1} />)}
+
+  {
+    tp.pr && (
+      <p class="pr">
+        <a href={tp.pr.href} target="_blank" rel="noopener">
+          {t(lang, 'view_pr')}：PR #{tp.pr.n} ↗
+        </a>
+      </p>
+    )
+  }
+</Base>
+
+<style>
+  .back {
+    display: inline-block;
+    margin-top: 32px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .top {
+    padding: 24px 0 8px;
+  }
+  h1 {
+    font-size: clamp(28px, 5vw, 40px);
+    margin: 0 0 12px;
+  }
+  .lede {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 720px;
+    margin: 0 0 10px;
+  }
+  .toc {
+    margin-top: 24px;
+    padding: 16px 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .toc ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .pr {
+    margin: 48px 0 0;
+    font-weight: 500;
+  }
+</style>

@@ -19,6 +19,23 @@ import iconFocus from '../assets/icons/focus-correction.png';
 import iconMockMes from '../assets/icons/mock-mes.png';
 import iconGear from '../assets/icons/gear-demo.png';
 import gearShot from '../assets/shots/gear-demo.png';
+import demoShopGrafana from '../assets/shots/demo-shop-grafana.png';
+import demoShopArchZh from '../assets/diagrams/demo-shop-architecture.svg?url';
+import demoShopArchEn from '../assets/diagrams/demo-shop-architecture-en.svg?url';
+import demoShopCheckoutZh from '../assets/diagrams/demo-shop-checkout-flow.svg?url';
+import demoShopCheckoutEn from '../assets/diagrams/demo-shop-checkout-flow-en.svg?url';
+import demoShopAiModesZh from '../assets/diagrams/demo-shop-ai-modes-zh.svg?url';
+import demoShopAiModesEn from '../assets/diagrams/demo-shop-ai-modes-en.svg?url';
+import demoShopLlmIsoZh from '../assets/diagrams/demo-shop-llm-isolation.svg?url';
+import demoShopLlmIsoEn from '../assets/diagrams/demo-shop-llm-isolation-en.svg?url';
+import demoShopAiFlowZh from '../assets/diagrams/demo-shop-ai-data-flow-zh.svg?url';
+import demoShopAiFlowEn from '../assets/diagrams/demo-shop-ai-data-flow-en.svg?url';
+import demoShopJourneyZh from '../assets/diagrams/demo-shop-loadtest-journey.svg?url';
+import demoShopJourneyEn from '../assets/diagrams/demo-shop-loadtest-journey-en.svg?url';
+import demoShopCluster from '../assets/shots/demo-shop-sandbox-cluster.png';
+import demoShopLoadForm from '../assets/shots/demo-shop-sandbox-loadtest.png';
+import demoShopReportFpm from '../assets/shots/demo-shop-report-fpm.png';
+import demoShopReportGo from '../assets/shots/demo-shop-report-go.png';
 
 export type Lang = 'zh' | 'en';
 export type L = { zh: string; en: string };
@@ -73,6 +90,37 @@ export interface Architecture {
   side: ArchBox[];
 }
 
+/** An image that answers one question; diagrams get a white, scrollable frame */
+export interface Figure {
+  src: { zh: ImageMetadata | string; en: ImageMetadata | string };
+  alt: L;
+  caption?: L;
+  /** Intrinsic size, needed when src is a URL string (SVG) */
+  width?: number;
+  height?: number;
+  diagram?: boolean;
+  /** Two half figures sit side by side on wide screens */
+  half?: boolean;
+}
+
+/** One part of a topic: the question it answers, the explanation and the proof */
+export interface TopicPart {
+  id: string;
+  title: L;
+  body: L[];
+  bullets?: L[];
+  figures?: Figure[];
+  code?: CodeSample;
+}
+
+/** A question an interviewer would ask, answered on the case study (and on its own page when it is large) */
+export interface Topic extends TopicPart {
+  /** PR in the public repo with this topic's code */
+  pr?: { n: number; href: string };
+  /** Sub-parts shown on /<slug>/<topic id>/; the case study shows the topic summary and links there */
+  parts?: TopicPart[];
+}
+
 export interface Project {
   slug: string;
   featured: boolean;
@@ -97,7 +145,7 @@ export interface Project {
     byline: L;
     index: string;
     tags: string[];
-    panel: { bg: string; layout: 'pair' | 'cascade' | 'frame' | 'bleed' | 'code'; shots?: number[]; code?: { label: string; source: string }[] };
+    panel: { bg: string; layout: 'pair' | 'cascade' | 'frame' | 'bleed' | 'code' | 'overlay'; shots?: number[]; code?: { label: string; source: string }[] };
   };
   tagline: L;
   role: L;
@@ -111,6 +159,13 @@ export interface Project {
   credit?: L;
   /** Replaces the role/stack facts and the flow with one system diagram */
   architecture?: Architecture;
+  /** Questions answered in order, replacing highlights, screenshots and the code sample */
+  topics?: Topic[];
+  /** The bug story told under its own heading */
+  bug?: L[];
+  limits?: L[];
+  /** A hand-made architecture image shown in place of the box diagram */
+  diagram?: { src: L; alt: L; caption?: L };
   /** Before/after table of backend techniques, with the repo they link into */
   techniques?: { repo: string; rows: Technique[]; method: { body: L; commits: string[] } };
   flow?: { title: L; steps: FlowStep[]; note?: L };
@@ -122,6 +177,74 @@ export interface Project {
 }
 
 export const projects: Project[] = [
+  // ─────────────────────────────────────────────── Demo Shop
+  {
+    slug: 'demo-shop',
+    banner: true,
+    home: {
+      points: {
+        intro: { zh: '分散式微服務電商：用 Outbox／Inbox＋ACID 交易確保下單到退款的正確性；另有獨立的經銷商叫貨系統、可自動回覆或協助真人客服的 AI 客服，以及 Sandbox 封閉式整合測試與壓力測試。', en: 'Distributed microservice e-commerce: outbox / inbox and ACID transactions keep checkout through refund correct. It also has a separate distributor ordering system, an AI support agent that answers customers or assists a human agent, and a sealed sandbox for integration and load tests.' },
+        barrier: { zh: '金流逾時、通知重複或漏送時，不能收了錢卻沒有訂單（Saga 補償、定期對帳）；流量變大時，要量得出先壞在哪裡。', en: 'When the payment provider times out or sends a callback twice or never, a charge must never end up without an order (saga compensation, reconciliation); under load, you have to measure what breaks first.' },
+      },
+      links: [{ kind: 'github', href: 'https://github.com/playcsgo/demo-shop-showcase' }],
+      byline: { zh: '獨立開發', en: 'Solo' },
+      index: 'Laravel · Go · NestJS · Next.js · Kubernetes',
+      tags: ['Laravel', 'Go', 'NestJS', 'MySQL', 'AWS SQS (MQ)', 'Kubernetes'],
+      panel: {
+        bg: '#E4DED3',
+        layout: 'overlay',
+        shots: [0],
+        code: [{ label: 'core-api · Domain/Messaging/Inbox.php', source: `return DB::transaction(function () use ($eventId, $type, $handler) {
+    $inserted = DB::table('inbox_messages')->insertOrIgnore([
+        'event_id' => $eventId, 'type' => $type, 'processed_at' => now(),
+    ]);
+
+    if ($inserted === 0) {
+        return false;
+    }
+
+    $handler();
+
+    return true;
+});` }],
+      },
+    },
+    iconText: 'DS',
+    oneLiner: { zh: '多服務電商後端：在故障和高流量下維持帳務正確，並量出瓶頸。', en: 'A multi-service e-commerce backend that stays correct under failures and load, with the bottleneck measured.' },
+    pain: { zh: '廠商會逾時、重送、漏送，流量會突然變好幾倍。系統只在一切順利時正確，上線後就會出現收了錢卻沒有訂單。', en: 'Vendors time out, resend and drop callbacks, and traffic can jump several times over. A system that is only correct on the happy path will charge customers without creating orders.' },
+    featured: true,
+    status: 'archived',
+    period: '2026.10',
+    title: { zh: 'Demo Shop：分散式微服務電商', en: 'Demo Shop: distributed microservice e-commerce' },
+    tagline: {
+      zh: '分散式微服務電商：用 Outbox／Inbox＋ACID 交易確保下單到退款的正確性；另有獨立的經銷商叫貨系統、可自動回覆或協助真人客服的 AI 客服，以及 Sandbox 封閉式整合測試與壓力測試。',
+      en: 'Distributed microservice e-commerce: outbox / inbox and ACID transactions keep checkout through refund correct. It also has a separate distributor ordering system, an AI support agent that answers customers or assists a human agent, and a sealed sandbox for integration and load tests.',
+    },
+    role: { zh: '獨立開發（設計、實作、測試、部署）', en: 'Solo project (design, implementation, tests, deployment)' },
+    stack: ['Laravel 12', 'Go', 'NestJS', 'Next.js 16', 'MySQL + ProxySQL', 'Redis', 'SQS', 'Kubernetes', 'Helm', 'Terraform', 'k6', 'Grafana + Loki'],
+    links: [{ label: { zh: 'GitHub', en: 'GitHub' }, href: 'https://github.com/playcsgo/demo-shop-showcase' }],
+    shots: [
+      {
+        src: { zh: demoShopGrafana, en: demoShopGrafana },
+        alt: { zh: 'Grafana 儀表板：k6 計畫 15149 筆、系統完成 15147 筆，各服務處理時間與每個 Pod 的 CPU', en: 'Grafana dashboard: 15,149 orders planned by k6, 15,147 completed, per-service latency and per-pod CPU' },
+        caption: {
+          zh: 'K8s 逐階加壓 10→80 TPS（2026-11-18，NestJS 版第 1 次）：k6 計畫的 15,149 筆完成 15,147 筆，未完成 0；下方是每一階加壓時各 Pod 的 CPU',
+          en: 'Stepped load on Kubernetes, 10→80 TPS (2026-11-18, NestJS run 1): 15,147 of the 15,149 orders k6 planned completed, none left unfinished; below, each pod\u2019s CPU as the load steps up',
+        },
+      },
+    ],
+    credit: { zh: '獨立開發（以 Claude Code 協作）', en: 'Solo, built with Claude Code as a pair programmer' },
+    highlights: [],
+    topics: [
+      { id: "system-design", title: { zh: "系統設計：怎麼拆、為什麼這樣拆", en: "System design: how it is split and why" }, body: [{ zh: "每一層只做一件事：前台只呼叫 BFF；BFF 只管登入狀態、轉發和聚合；業務規則只在核心 API 有一份；廠商之間的差異收在串接服務。", en: "Each layer does one job: the storefront only calls the BFF; the BFF handles login state, forwarding and aggregation; business rules exist only in the core API; vendor differences live in the integration hub." }, { zh: "錢和庫存必須一致，所以留在同一個核心、同一個資料庫。廠商呼叫又慢又不穩，所以隔離到串接服務，每家廠商一組獨立的處理程序，一家慢不會拖住其他家。", en: "Money and stock must stay consistent, so they live in one core and one database. Vendor calls are slow and unreliable, so they are isolated in the hub, with separate workers per vendor so one slow vendor cannot stall the others." }, { zh: "核心和串接服務之間只走佇列：下單只寫資料庫就回應，廠商掛掉也不會擋住顧客。", en: "The core and the hub only talk through queues: checkout responds after writing to the database, and a vendor outage never blocks a customer." }], bullets: [{ zh: "取捨：BFF 多一次網路往返，換來登入憑證不離開伺服器，瀏覽器裡沒有任何 token。", en: "Trade-off: the BFF adds a network hop; in return credentials never leave the server and the browser holds no token." }, { zh: "取捨：佇列只保證「至少送一次」，所以每個消費端都要冪等；換來的是不需要分散式交易。", en: "Trade-off: queues only guarantee at-least-once delivery, so every consumer must be idempotent; in return there is no distributed transaction." }, { zh: "邊界切得乾淨的證明：前台＋BFF（NestJS／Next.js）和核心 API（Laravel／Go）都各有兩個可以切換的版本，換掉一層不必改其他層。", en: "Proof the boundaries hold: the storefront + BFF (NestJS / Next.js) and the core API (Laravel / Go) each have two switchable versions, and swapping one layer needs no change elsewhere." }], figures: [{ src: { zh: demoShopArchZh, en: demoShopArchEn }, alt: { zh: "系統架構圖：使用者、入口、應用服務、訊息、串接層、資料六層，加上經銷商叫貨和 AI 客服兩個延伸服務；右側是平台、可觀測性、測試與驗證；灰色框是還沒做的第二階段", en: "Architecture diagram in six layers (users, ingress, services, messaging, integration, data) plus two add-on services, with platform, observability and testing on the right; grey boxes are the unbuilt second phase" }, caption: { zh: "經銷商叫貨是完全獨立的服務；AI 客服的對話存在自己的資料庫，商品和訂單透過 core-api 的內部 API 查詢。Go 版核心和 Next.js 版前台＋BFF 是同一層的替換版本，沒有另外畫出。點圖可以看原尺寸。", en: "Distributor ordering is fully separate; AI support keeps chats in its own database and reads products and orders through core-api’s internal API. The Go core and the Next.js storefront + BFF replace their layers and are not drawn separately. Click to open full size." }, width: 1520, height: 1375, diagram: true }], pr: { n: 1, href: "https://github.com/playcsgo/demo-shop-showcase/pull/1" } },
+      { id: "transaction-correctness", title: { zh: "交易正確性：收了錢，就一定要有訂單", en: "Transaction correctness: a charge always has an order" }, body: [{ zh: "廠商會逾時、把同一個通知送兩次，也會漏送。系統要在這些情況下，仍然不會收了錢卻沒有訂單、庫存被扣兩次。", en: "Vendors time out, send the same callback twice or never send it. Even then, the system must never charge without an order or deduct stock twice." }, { zh: "Outbox：訂單和要送給金流的指令寫在同一筆交易。交易成功，指令就一定會送出；交易失敗，指令也不存在。", en: "Outbox: the order and the command for the payment provider are written in one transaction. If it commits, the command will be sent; if it fails, the command never existed." }, { zh: "Inbox：同一個付款結果收到兩次，只處理一次。登記事件編號和處理本身在同一筆交易，處理失敗就一起回滾，下次重送還能再處理（下面的程式碼）。", en: "Inbox: a payment result received twice is handled once. Recording the event id and handling it share one transaction, so a failure rolls both back and the retry can try again (code below)." }, { zh: "ACID：一筆交易裡的寫入一起成功或一起失敗；CHECK 和 UNIQUE 約束擋住負庫存和重複訂單；用 FOR UPDATE 依商品順序上鎖；commit 之後才算數。", en: "ACID: writes in a transaction succeed or fail together; CHECK and UNIQUE constraints stop negative stock and duplicate orders; FOR UPDATE locks rows in product order; nothing counts until commit." }], bullets: [{ zh: "其他防線：冪等鍵擋連按結帳、Saga 補償釋放預留、排程對帳追查沒回來的通知、重試＋斷路器、失敗 5 次進 DLQ。", en: "Other defences: idempotency keys against double checkouts, saga compensation to release reservations, scheduled reconciliation for missing callbacks, retries with a circuit breaker, and a DLQ after 5 failures." }, { zh: "驗證：金流 30% 錯誤、30 位顧客同時下單並隨機退款，10 項不變式全部 0 不一致。", en: "Verified: with 30% payment errors and 30 customers checking out at once with random refunds, all 10 invariants show 0 inconsistencies." }], figures: [{ src: { zh: demoShopCheckoutZh, en: demoShopCheckoutEn }, alt: { zh: "結帳流程圖：同步的第 1、2 步和非同步的第 3～7 步，右側是每種失敗怎麼收尾", en: "Checkout flow: synchronous steps 1–2, asynchronous steps 3–7, and how each failure is closed out on the right" }, caption: { zh: "顧客只等第 1、2 步；之後經 outbox → SQS → inbox 非同步完成。右邊是每一種失敗怎麼收尾。", en: "The customer only waits for steps 1–2; the rest runs asynchronously via outbox → SQS → inbox. The right side shows how each failure is closed out." }, width: 1490, height: 1420, diagram: true }], code: { file: "services/core-api/app/Domain/Messaging/Inbox.php", lang: "php", caption: { zh: "同一個付款通知收到兩次，只會處理一次：登記事件編號和處理本身在同一筆交易。", en: "A payment callback received twice is handled once: recording the event id and handling it share one transaction." }, source: "public function handleOnce(string $eventId, string $type, callable $handler): bool\n{\n    return DB::transaction(function () use ($eventId, $type, $handler) {\n        $inserted = DB::table('inbox_messages')->insertOrIgnore([\n            'event_id' => $eventId, 'type' => $type, 'processed_at' => now(),\n        ]);\n\n        if ($inserted === 0) {\n            return false;\n        }\n\n        $handler();\n\n        return true;\n    });\n}" }, pr: { n: 2, href: "https://github.com/playcsgo/demo-shop-showcase/pull/2" } },
+      { id: "ai-support", title: { zh: "AI 客服：怎麼做出來的", en: "AI-assisted support: how it works" }, body: [{ zh: "客戶可以直接問 AI（Ask）；真人客服接手後，AI 也可以在旁邊協助（Join）。", en: "Customers can ask the AI directly (Ask), and after a human agent takes over the AI can assist from the side (Join)." }, { zh: "每次呼叫都是全新、隔離的程序；AI 只能透過 15 個白名單工具查 core-api 的資料，退款要真人核准。", en: "Every call is a fresh, isolated process; the AI reads core-api data only through 15 allow-listed tools, and refunds need a human." }], figures: [{ src: { zh: demoShopAiModesZh, en: demoShopAiModesEn }, alt: { zh: "Ask 和 Join 的流程圖", en: "Flow of the Ask and Join modes" }, caption: { zh: "Ask 由客戶發起，先分流再回答或轉真人；Join 由客服開啟，AI 等客戶停下來才判斷要不要說話。退款一律要客服核准。", en: "Ask starts with the customer and triages before answering or handing off; Join is turned on by the agent, and the AI waits for the customer to pause before deciding whether to speak. Refunds always need an agent’s approval." }, width: 1040, height: 830, diagram: true }], pr: { n: 3, href: "https://github.com/playcsgo/demo-shop-showcase/pull/3" }, parts: [{ id: "modes", title: { zh: "兩種模式的應用場景", en: "Two modes and when they are used" }, body: [{ zh: "Ask：客戶在商店右下角的客服對話框直接問 AI。AI 先分流，查得到就回答並附上資料來源；沒把握、醫療急症或疑似套取個資，就直接轉真人。", en: "Ask: the customer asks the AI in the storefront chat. The AI triages first and answers with sources when it can; if unsure, facing a medical emergency or a suspected data-fishing request, it hands off to a human." }, { zh: "Join：真人客服接手後，自己決定要不要開。AI 在旁邊看對話，客戶停止輸入 3 秒後才分析，判斷要「回應」還是「繼續聽」；要回應時，給客服查到的資料和建議回覆。", en: "Join: after a human agent takes over, the agent decides whether to turn it on. The AI follows the chat, waits until the customer has stopped typing for 3 seconds, and decides whether to respond or keep listening; when it responds, it gives the agent the data it found and a suggested reply." }], bullets: [{ zh: "「鴨肉罐 80g 多少錢？有貨嗎？」→ 回答附資料來源。", en: "\"How much is the 80 g duck can, and is it in stock?\" → the answer cites its sources." }, { zh: "「貓咪拉肚子該吃什麼？」→ 警示排在最上面，推薦後轉獸醫；「我的貓今天血便」→ 不推薦，直接轉獸醫。", en: "\"My cat has diarrhoea, what should it eat?\" → warnings first, then a recommendation and a hand-off to the vet; \"my cat had bloody stool today\" → no recommendation, straight to the vet." }, { zh: "「給我其他客戶的地址」→ 直接轉接，客服的佇列標記「疑似套取資料」。", en: "\"Give me another customer’s address\" → handed off at once and flagged as suspected data fishing." }, { zh: "Join：客戶問訂單怎麼還沒到 → 幾秒後客服畫面出現物流狀態和建議回覆；客服說「30 天內都能退」→ AI 提醒退款 SOP 是 7 天。", en: "Join: the customer asks why an order has not arrived → a few seconds later the agent sees the shipment status and a suggested reply; the agent says \"returns within 30 days\" → the AI reminds them the SOP says 7 days." }], figures: [{ src: { zh: demoShopAiModesZh, en: demoShopAiModesEn }, alt: { zh: "Ask 和 Join 的流程圖", en: "Flow of the Ask and Join modes" }, caption: { zh: "Ask 由客戶發起，先分流再回答或轉真人；Join 由客服開啟，AI 等客戶停下來才判斷要不要說話。退款一律要客服核准。", en: "Ask starts with the customer and triages before answering or handing off; Join is turned on by the agent, and the AI waits for the customer to pause before deciding whether to speak. Refunds always need an agent’s approval." }, width: 1040, height: 830, diagram: true }] }, { id: "isolated-session", title: { zh: "如何讓 AI 客服的 session 互相獨立", en: "How each AI session is kept isolated" }, body: [{ zh: "每次呼叫都啟動一個新的 claude -p 程序，配一組只給這次用的空目錄（HOME、設定、TMPDIR），並關掉 session 保存。對話內容只從我們傳入的訊息來，CLI 找不回任何舊對話。", en: "Every call starts a new claude -p process with its own empty directories (HOME, config, TMPDIR) and session persistence turned off. The conversation comes only from what we pass in, and the CLI cannot reach any earlier chat." }, { zh: "子程序的環境變數用白名單，拿不到資料庫密碼和內部金鑰。", en: "The child process gets an allow-listed environment, so it never sees database passwords or internal keys." }, { zh: "CLI 啟動時會回報可用的工具清單，這份清單會和白名單比對；有任何多出來的工具、MCP 或外掛，就在模型回答前停掉程序。這樣 CLI 升級改變了參數行為也擋得住。", en: "The CLI reports its tools at start-up, and that list is checked against the allow-list; any extra tool, MCP server or plugin kills the process before the model answers. This holds even if a CLI upgrade changes how a flag behaves." }], bullets: [{ zh: "驗證：隔離測試用真的 CLI 跑，確認新對話看不到舊對話、拿不到不該有的工具。", en: "Verified: isolation tests run against the real CLI, confirming a new chat cannot see an old one or reach tools it should not have." }], figures: [{ src: { zh: demoShopLlmIsoZh, en: demoShopLlmIsoEn }, alt: { zh: "一次 LLM 呼叫的生命週期：拿名額、建新目錄、啟動程序、檢查工具清單、串流、清理", en: "The life of one LLM call: take a slot, create fresh directories, start the process, check the tool list, stream, clean up" }, caption: { zh: "每次呼叫都從空目錄開始，工具清單不符就在模型回答前停掉；不管成功、失敗或取消，都要確認程序整組結束、目錄刪掉，才送出結果。", en: "Every call starts from empty directories and is killed before the model answers if the tool list is off; whether it succeeds, fails or is cancelled, the whole process group must exit and the directories be deleted before a result goes out." }, width: 890, height: 920, diagram: true }] }, { id: "product-and-order-data", title: { zh: "如何讓 AI 客服了解產品和訂單", en: "How the AI knows products and orders" }, body: [{ zh: "模型只能用 15 個白名單工具，例如查商品說明、庫存、訂單、物流和退款 SOP，不讓 AI 寫 SQL。", en: "The model can only use 15 allow-listed tools, such as product docs, stock, orders, shipments and the refund SOP; it never writes SQL." }, { zh: "工具透過 MCP 提供，實作在 support 服務裡，再呼叫 core-api 的內部 API，帶服務金鑰和「這次代表的是哪位客戶」。", en: "The tools are served over MCP by the support service, which calls core-api’s internal API with a service key and the customer it acts for." }, { zh: "每次執行發一個 5 分鐘的 run token，綁定這次的客戶；客戶 ID 由伺服器放進去，模型無法自己指定。依角色開放不同的工具：匿名、客戶、客服、Join。", en: "Each run gets a 5-minute run token bound to that customer; the server sets the customer id and the model cannot choose it. Each role gets its own tools: anonymous, customer, agent and Join." }], bullets: [{ zh: "取捨：只能用工具查資料，回答比較受限，但每句話都能指回查到的資料。", en: "Trade-off: tools-only access limits what the AI can say, but every statement points back to data it looked up." }], figures: [{ src: { zh: demoShopAiFlowZh, en: demoShopAiFlowEn }, alt: { zh: "AI 客服查資料的路徑：模型 → MCP → 工具 → core-api 內部 API → MySQL", en: "How AI support reads data: model → MCP → tools → core-api internal API → MySQL" }, caption: { zh: "模型只看得到工具，看不到資料庫；客戶是誰由伺服器決定，模型無法指定。", en: "The model sees tools, never the database; the server decides which customer it acts for, not the model." }, width: 940, height: 990, diagram: true }] }, { id: "calling-the-model", title: { zh: "怎麼呼叫模型", en: "How the model is called" }, body: [{ zh: "用 Claude Code CLI 的 headless 模式（claude -p），輸出 stream-json 一路串流到畫面上；需要結構化結果時加 --json-schema。分流和 Join 的判斷用 Haiku，正式回答用 Sonnet。", en: "Claude Code CLI in headless mode (claude -p), with stream-json output streamed to the screen and --json-schema when a structured result is needed. Triage and the Join gate use Haiku; answers use Sonnet." }, { zh: "同時執行的數量有上限（預設 5 個），超過就排隊，排隊中也可以取消。", en: "Concurrent runs are capped (5 by default); extra runs queue and can be cancelled while waiting." }], bullets: [{ zh: "取捨：用 CLI 而不是直接打 API，每次呼叫都要啟動新程序，比較慢，也要防 CLI 升級時行為改變；換來的是每次呼叫之間完全不共享狀態。", en: "Trade-off: the CLI instead of the API means a new process per call, which is slower, and guarding against CLI upgrades changing behaviour; in return no state is shared between calls." }, { zh: "退款要真人核准：AI 只能提出提案，客服按核准才執行，core-api 會再驗一次（例如超過 7 天退款期限就擋下）。", en: "Refunds need a human: the AI can only propose, the agent approves, and core-api checks again (for example, it rejects anything past the 7-day window)." }], code: { file: "services/support/api/src/llm/claude-cli.runner.ts", lang: "ts", caption: { zh: "每次呼叫 claude -p 的參數：不讀任何設定、只連我們給的 MCP、不保存 session、只開白名單裡的工具。", en: "The arguments for every claude -p call: no settings read, only our MCP server, no session persistence, only allow-listed tools." }, source: "private args(input: LlmRunInput, mcpConfig: string): string[] {\n  const args = [\n    '-p',\n    '--output-format',\n    'stream-json',\n    '--verbose',\n    '--include-partial-messages',\n    '--model',\n    input.tier === 'fast' ? this.config.fastModel : this.config.mainModel,\n    '--system-prompt',\n    `${input.system}\\n\\n${DATA_NOT_INSTRUCTIONS}`,\n    '--setting-sources',\n    '',\n    '--strict-mcp-config',\n    '--mcp-config',\n    mcpConfig, // 檔案而不是字串：token 不該出現在程序參數裡\n    '--tools',\n    '',\n    '--permission-mode',\n    'dontAsk',\n    '--no-session-persistence',\n    '--disable-slash-commands',\n  ];\n  if (input.mcp)\n    args.push(\n      '--allowedTools',\n      input.mcp.allowedTools.map(mcpToolName).join(','),\n    );\n  if (input.jsonSchema)\n    args.push('--json-schema', JSON.stringify(input.jsonSchema));\n  return args;\n}" } }] },
+      { id: "load-testing", title: { zh: "壓力測試：怎麼做、怎麼看、怎麼優化", en: "Load testing: how it runs, how to read it, how it was tuned" }, body: [{ zh: "在封閉的 sandbox 裡注入故障驗證帳務，在 Kubernetes 上逐階加壓找瓶頸；一次只改一個設定，每一輪都檢查 10 項不變式。", en: "Faults are injected in a sealed sandbox to check the books, and stepped load on Kubernetes finds the bottleneck; one setting changes at a time and every run checks the 10 invariants." }, { zh: "把下單路徑改寫成 Go 之後，同樣 8 個 Pod 從約 40 TPS 撐到 80 TPS。", en: "After rewriting the checkout path in Go, the same 8 pods went from about 40 TPS to 80 TPS." }], figures: [{ src: { zh: demoShopGrafana, en: demoShopGrafana }, alt: { zh: "Grafana 儀表板：k6 計畫 15149 筆、系統完成 15147 筆，各服務處理時間與每個 Pod 的 CPU", en: "Grafana dashboard: 15,149 orders planned by k6, 15,147 completed, per-service latency and per-pod CPU" }, caption: { zh: "K8s 逐階加壓 10→80 TPS（2026-11-18）：k6 計畫的 15,149 筆完成 15,147 筆，未完成 0；中間是每一站的處理時間，下方是每一階加壓時各 Pod 的 CPU。", en: "Stepped load on Kubernetes, 10→80 TPS (2026-11-18): 15,147 of the 15,149 orders k6 planned completed, none unfinished; the middle shows each stage’s latency and the bottom each pod’s CPU as load steps up. The dashboard labels are in Chinese." } }], pr: { n: 4, href: "https://github.com/playcsgo/demo-shop-showcase/pull/4" }, parts: [{ id: "how-it-runs", title: { zh: "壓測怎麼做", en: "How the tests run" }, body: [{ zh: "同一台機器可以開好幾套完全獨立的環境，每套有自己的 MySQL、Redis、佇列和 log。一個情境是一個資料夾：廠商怎麼壞、有什麼資料、流量怎麼打、預期結果。", en: "One machine runs several fully separate environments, each with its own MySQL, Redis, queues and logs. A scenario is a folder: how vendors fail, what data exists, what traffic to send and what must hold afterwards." }, { zh: "每一筆請求要不要注入故障，由「種子值＋追蹤號碼」算出來，同一個種子值重跑，壞的是同一筆訂單。", en: "Whether a request gets a fault is derived from a seed plus its correlation id, so rerunning a seed breaks the same order." }, { zh: "壓力測試用 k6 走完整路徑（經過 BFF），逐階加壓，每階維持 60 秒；每一輪開始前清空資料，結束後檢查 10 項不變式。速度變快但資料錯了，不算變快。", en: "Load tests run k6 through the full path including the BFF, stepping load and holding each step for 60 seconds; data is reset before each run and the 10 invariants are checked after it. Faster but wrong does not count." }], bullets: [{ zh: "CI：每個 PR 用 2 套環境平行跑 8 個正確性情境，時間等比例縮短 5 倍，4 分 26 秒跑完。", en: "CI: every PR runs 8 correctness scenarios on 2 environments in parallel, with time scaled down 5×, in 4 min 26 s." }], figures: [{ src: { zh: demoShopCluster, en: demoShopCluster }, alt: { zh: "sandbox 控制台的 K8s 叢集地圖：每個 Node 上的 Pod，以及每個服務的擴充依據和範圍", en: "The sandbox console’s K8s cluster map: pods on each node and each service’s scaling rule and range" }, caption: { zh: "控制台的叢集地圖：可以切換 core-api 的執行方式（PHP-FPM／Octane／Go）、Pod 數模式，並手動固定任一服務的 Pod 數。", en: "The console’s cluster map: switch how core-api runs (PHP-FPM / Octane / Go) and the pod-count mode, or pin any service’s pod count by hand. The console UI is in Chinese." } }, { src: { zh: demoShopLoadForm, en: demoShopLoadForm }, alt: { zh: "sandbox 控制台的壓力測試表單和歷次結果", en: "The sandbox console’s load-test form and past runs" }, caption: { zh: "選環境、世界、每秒下單的階梯，按「執行壓測」；每一次都留下一份報告，可以點開比較。", en: "Pick the environment, the world and the load steps, then run; every run leaves a report you can open and compare. The console UI is in Chinese." } }] }, { id: "how-to-read", title: { zh: "結果怎麼看", en: "How to read the results" }, body: [{ zh: "每一輪壓測都產生一份 HTML 報告：各階的目標和實際送出、延遲、飽和的元件，以及「哪一階開始變慢」「誰先飽和」的判斷。", en: "Every run produces an HTML report: target versus sent per step, latency, saturated components, and a verdict on which step slowed down and what saturated first." }, { zh: "Grafana 看每個服務「收到 → 做完」的時間和每個 Pod 的 CPU；Datadog 看 trace。correlation_id 串起所有服務的 log，一筆訂單從結帳、佇列、廠商通知到排程都查得到。", en: "Grafana shows each service’s receive-to-done time and per-pod CPU; Datadog shows traces. A correlation_id ties every service’s logs together, so one order can be followed from checkout through queues, vendor callbacks and schedulers." }], figures: [{ src: { zh: demoShopGrafana, en: demoShopGrafana }, alt: { zh: "Grafana 儀表板：k6 計畫 15149 筆、系統完成 15147 筆，各服務處理時間與每個 Pod 的 CPU", en: "Grafana dashboard: 15,149 orders planned by k6, 15,147 completed, per-service latency and per-pod CPU" }, caption: { zh: "K8s 逐階加壓 10→80 TPS（2026-11-18）：k6 計畫的 15,149 筆完成 15,147 筆，未完成 0；中間是每一站的處理時間，下方是每一階加壓時各 Pod 的 CPU。", en: "Stepped load on Kubernetes, 10→80 TPS (2026-11-18): 15,147 of the 15,149 orders k6 planned completed, none unfinished; the middle shows each stage’s latency and the bottom each pod’s CPU as load steps up. The dashboard labels are in Chinese." } }] }, { id: "tuning", title: { zh: "優化過程", en: "How it was tuned" }, body: [{ zh: "原則：一次只改一個設定，比較前先重跑當天的基準。", en: "The rule: change one setting at a time, and rerun the day’s baseline before comparing." }], bullets: [{ zh: "先確定量得準：舊腳本繞過 BFF、k6 自己也會丟請求；改成走完整路徑後，被丟掉的請求從 124 筆降到 0～3 筆。", en: "Make the measurement trustworthy: the old script skipped the BFF and k6 dropped requests; after routing through the full path, drops went from 124 to 0–3." }, { zh: "上限約 40 TPS：超過之後 PHP-FPM 的行程全部占滿，健康檢查排不進去，Pod 被移出，成功率掉到約 28%。", en: "A ceiling around 40 TPS: past it, PHP-FPM ran out of workers, health checks could not get in, pods were pulled, and success fell to about 28%." }, { zh: "Pod 從 8 個加到 16 個反而更差，資料庫 CPU 下降：多出來的行程都在等下游，瓶頸不在 Pod 數。", en: "Going from 8 to 16 pods made it worse and database CPU dropped: the extra workers were waiting on downstream, so pod count was not the bottleneck." }, { zh: "只把下單路徑改寫成 Go（對照腳本確認 31 項行為一致）：同樣 8 個 Pod，到 80 TPS 成功率仍是 100%；10 TPS 時 CPU 約 PHP 版的四分之一。", en: "Rewrite only the checkout path in Go (a parity script confirms 31 behaviours match): on the same 8 pods it holds 100% success at 80 TPS, using about a quarter of PHP’s CPU at 10 TPS." }], figures: [{ src: { zh: demoShopJourneyZh, en: demoShopJourneyEn }, alt: { zh: "壓測歷程圖：每一步改了什麼、看到的數字、找到的瓶頸", en: "Load-test journey: what changed at each step, what was measured, the bottleneck found" }, caption: { zh: "2026-10-14～15 的前半段：從監控本身吃 CPU、庫存鎖、回程佇列，一路查到 PHP-FPM 的上限。之後的 Go 改寫見下面兩張圖。", en: "The first half, 2026-10-14 to 15: from monitoring overhead, stock locks and the return queue down to the PHP-FPM ceiling. The Go rewrite that followed is in the two charts below." }, width: 1720, height: 1158, diagram: true }, { src: { zh: demoShopReportFpm, en: demoShopReportFpm }, alt: { zh: "PHP-FPM 版：每秒下單的目標和實際送出", en: "PHP-FPM: target versus actually sent orders per second" }, caption: { zh: "PHP-FPM 版（8 個 Pod）：目標一路加到 80，實際送出卡在 20 左右。", en: "PHP-FPM (8 pods): the target (grey, 目標) climbs to 80 while actually sent orders (blue, 實際送出) stall around 20. Chart labels are in Chinese." }, half: true }, { src: { zh: demoShopReportGo, en: demoShopReportGo }, alt: { zh: "Go 版：每秒下單的目標和實際送出", en: "Go: target versus actually sent orders per second" }, caption: { zh: "Go 版（同樣 8 個 Pod）：實際送出和目標重疊，到 80 TPS 成功率仍是 100%。", en: "Go (same 8 pods): actually sent orders match the target, with 100% success at 80 TPS." }, half: true }] }] },
+    ],
+    bug: [{ zh: "金流 30% 回傳錯誤時，故障測試抓到一張被扣款、卻是失敗的訂單。原因是對帳把金流「查不到」當成「沒扣款」，但扣款請求其實還在佇列裡等重試。", en: "With 30% payment errors, the fault tests caught an order that was failed yet charged. The reconciler read \"not found\" from the provider as \"not charged\", while the charge was still queued for retry." }, { zh: "修正有三步：超過付款期限 180 秒仍查不到才判定失敗，這個期限刻意長於佇列的重試窗口（30 秒 × 5 次＝150 秒）；判定失敗之後才收到付款成功，一律自動全額退款；再補一條不變式和兩個測試，把這個情況固定下來。", en: "The fix has three parts: a payment is only declared failed 180 s past its deadline, deliberately longer than the queue’s retry window (30 s × 5 = 150 s); any success that arrives after a failure is refunded in full automatically; and a new invariant plus two tests pin the case down." }],
+    limits: [{ zh: "全部在一台 Mac mini 上測，機器沒有獨佔；數字只用來比較設定之間的差異，不代表正式環境的容量。", en: "Everything ran on one Mac mini that was not reserved for testing; the numbers compare settings and say nothing about production capacity." }, { zh: "到 80 TPS 時資料庫連線已經用滿，付款完成的 p95 拉長到 40～85 秒，這是下一個要處理的瓶頸。", en: "At 80 TPS database connections were saturated and payment-completion p95 stretched to 40–85 seconds; that is the next bottleneck." }, { zh: "切換到 Next.js 版還不能安全退回：曾經在 Helm 升級失敗時，首頁約 20 分鐘打不開。", en: "Switching to the Next.js version cannot yet roll back safely: once, when a Helm upgrade failed, the home page was down for about 20 minutes." }, { zh: "服務之間用共用金鑰驗證，正式環境應該換成 mTLS 或 OAuth client credentials；也沒有做過第三方滲透測試。", en: "Services authenticate each other with shared keys; production should use mTLS or OAuth client credentials. There has been no third-party penetration test." }, { zh: "真實的金流和物流沒有串接，由模擬廠商代替。", en: "Real payment and logistics providers are not integrated; mock vendors stand in for them." }],
+  },
+
   // ─────────────────────────────────────────────── Yoution
   {
     slug: 'yoution',

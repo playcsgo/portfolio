@@ -1,0 +1,10 @@
+---
+import TopicPage from '../../views/TopicPage.astro';
+import { projects, type Project, type Topic } from '../../data/projects';
+
+export const getStaticPaths = () =>
+  projects.flatMap((project) => (project.topics ?? []).filter((topic) => topic.parts).map((topic) => ({ params: { slug: project.slug, topic: topic.id }, props: { project, topic } })));
+const { project, topic } = Astro.props as { project: Project; topic: Topic };
+---
+
+<TopicPage lang="zh" project={project} topic={topic} />

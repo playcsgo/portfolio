@@ -1,0 +1,107 @@
+---
+import FigureBox from './FigureBox.astro';
+import CodeWindow from './CodeWindow.astro';
+import type { Lang, Topic, TopicPart } from '../data/projects';
+import { t, tx } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  part: Topic | TopicPart;
+  /** Shown as "01" before the title */
+  index?: number;
+  /** Case-study page: link to the topic's own page when it has parts */
+  moreHref?: string;
+  level?: 2 | 3;
+}
+const { lang, part, index, moreHref, level = 2 } = Astro.props;
+const pr = 'pr' in part ? part.pr : undefined;
+const H = level === 2 ? 'h2' : 'h3';
+---
+
+<section class="topic" id={part.id}>
+  <H>
+    {index !== undefined && <span class="mono idx">{String(index).padStart(2, '0')}</span>}
+    {tx(lang, part.title)}
+  </H>
+  {part.body.map((p) => <p>{tx(lang, p)}</p>)}
+  {
+    part.bullets && (
+      <ul>
+        {part.bullets.map((b) => (
+          <li>{tx(lang, b)}</li>
+        ))}
+      </ul>
+    )
+  }
+  {part.figures && <div class="figures">{part.figures.map((f) => <FigureBox lang={lang} figure={f} />)}</div>}
+  {part.code && <CodeWindow lang={lang} code={part.code} />}
+  {
+    (pr || moreHref) && (
+      <p class="actions">
+        {moreHref && <a href={moreHref}>{t(lang, 'read_more')} →</a>}
+        {pr && (
+          <a href={pr.href} target="_blank" rel="noopener">
+            {t(lang, 'view_pr')}：PR #{pr.n} ↗
+          </a>
+        )}
+      </p>
+    )
+  }
+</section>
+
+<style>
+  .topic {
+    margin-top: 48px;
+  }
+  .topic > p,
+  .topic > ul {
+    max-width: 720px;
+  }
+  h2,
+  h3 {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0 0 12px;
+  }
+  h2 {
+    font-size: 22px;
+  }
+  h3 {
+    font-size: 18px;
+  }
+  .idx {
+    font-size: 13px;
+    color: var(--accent);
+  }
+  ul {
+    padding-left: 20px;
+  }
+  li + li {
+    margin-top: 6px;
+  }
+  .figures {
+    display: grid;
+    gap: 24px;
+    margin: 20px 0;
+  }
+  /* Half figures (e.g. a before/after pair) share a row on wide screens; everything else spans it */
+  @media (min-width: 720px) {
+    .figures {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .figures > :global(.figure:not(.half)) {
+      grid-column: 1 / -1;
+    }
+  }
+  .topic > :global(.code-window) {
+    margin-top: 20px;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 16px;
+    font-weight: 500;
+  }
+</style>

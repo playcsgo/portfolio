@@ -205,4 +205,43 @@ const shotStyle = (i: number) => (vt ? `view-transition-name: ${vt}-${i}; view-t
       display: none;
     }
   }
+  /* Screenshot with one code window laid over its lower-left corner */
+  .overlay {
+    justify-content: flex-end;
+    align-items: flex-start;
+  }
+  .overlay img {
+    width: 84%;
+    border-radius: 10px;
+    box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
+  }
+  .overlay .windows {
+    position: absolute;
+    left: 6%;
+    bottom: 8%;
+    width: 52%;
+    grid-template-columns: 1fr;
+  }
+  .overlay .win {
+    box-shadow: 0 24px 48px rgb(0 0 0 / 0.45);
+  }
+  /* Long lines are cut at the window edge; the full file is on the case-study page */
+  .overlay .win pre {
+    font-size: 12px;
+    overflow: hidden;
+  }
+  .banner.overlay {
+    align-items: center;
+  }
+  .banner.overlay img {
+    width: auto;
+    height: 100%;
+  }
+  .banner.overlay .windows {
+    max-width: none;
+    bottom: auto;
+    top: 10%;
+    left: 4%;
+    width: 36%;
+  }
 </style>

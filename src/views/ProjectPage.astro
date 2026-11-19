@@ -7,9 +7,11 @@ import ProjectPanel from '../components/ProjectPanel.astro';
 import Architecture from '../components/Architecture.astro';
 import GearDiagram from '../components/GearDiagram.astro';
 import TechniqueTable from '../components/TechniqueTable.astro';
+import TopicBlock from '../components/TopicBlock.astro';
 import { projectLd } from '../data/seo';
 import type { Lang, Project } from '../data/projects';
 import { t, tx, href } from '../data/site';
+const topicHref = (lang: Lang, slug: string, id: string) => href(lang, `/${slug}/${id}/`);
 
 interface Props {
   lang: Lang;
@@ -66,7 +68,7 @@ const leadDiagram = p.slug === 'async-jobs-rabbitmq';
   }
 
   {
-    !p.architecture && (
+    !p.architecture && !p.diagram && (
   <dl class="facts">
     <div>
       <dt class="eyebrow">{t(lang, 'role')}</dt>
@@ -103,11 +105,24 @@ const leadDiagram = p.slug === 'async-jobs-rabbitmq';
   }
 
   {
-    p.architecture && !leadDiagram && (
+    p.diagram ? (
       <section>
         <h2>{t(lang, 'architecture')}</h2>
-        <Architecture lang={lang} arch={p.architecture} />
+        <figure class="diagram">
+          <a class="diagram-frame" href={tx(lang, p.diagram.src)} target="_blank" rel="noopener">
+            <img src={tx(lang, p.diagram.src)} alt={tx(lang, p.diagram.alt)} width="1520" height="1375" loading="lazy" decoding="async" />
+          </a>
+          {p.diagram.caption && <figcaption>{tx(lang, p.diagram.caption)}</figcaption>}
+        </figure>
       </section>
+    ) : (
+      p.architecture &&
+      !leadDiagram && (
+        <section>
+          <h2>{t(lang, 'architecture')}</h2>
+          <Architecture lang={lang} arch={p.architecture} />
+        </section>
+      )
     )
   }
 
@@ -122,6 +137,48 @@ const leadDiagram = p.slug === 'async-jobs-rabbitmq';
     )
   }
 
+  {
+    p.topics && (
+      <nav class="toc" aria-label={t(lang, 'on_this_page')}>
+        <span class="eyebrow">{t(lang, 'on_this_page')}</span>
+        <ol>
+          {p.topics.map((tp) => (
+            <li>
+              <a href={`#${tp.id}`}>{tx(lang, tp.title)}</a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    )
+  }
+
+  {p.topics && p.topics.map((tp, i) => <TopicBlock lang={lang} part={tp} index={i + 1} moreHref={tp.parts ? topicHref(lang, p.slug, tp.id) : undefined} />)}
+
+  {
+    p.bug && (
+      <section>
+        <h2>{t(lang, 'caught_bug')}</h2>
+        {p.bug.map((b) => (
+          <p>{tx(lang, b)}</p>
+        ))}
+      </section>
+    )
+  }
+
+  {
+    p.limits && (
+      <section>
+        <h2>{t(lang, 'limits')}</h2>
+        <ul class="learned">
+          {p.limits.map((l) => (
+            <li>{tx(lang, l)}</li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  {!p.topics && (
   <section>
     <h2>{t(lang, p.home.points ? 'answers' : 'highlights')}</h2>
     <div class="highlights">
@@ -143,9 +200,10 @@ const leadDiagram = p.slug === 'async-jobs-rabbitmq';
       }
     </div>
   </section>
+  )}
 
   {
-    p.banner && p.shots && (
+    !p.topics && p.banner && p.shots && (
       <section>
         <h2>{t(lang, 'screens')}</h2>
         <div class="shots">
@@ -158,7 +216,7 @@ const leadDiagram = p.slug === 'async-jobs-rabbitmq';
   }
 
   {
-    p.code && (
+    !p.topics && p.code && (
       <section>
         <CodeWindow lang={lang} code={p.code} />
       </section>
@@ -194,6 +252,44 @@ const leadDiagram = p.slug === 'async-jobs-rabbitmq';
 </Base>
 
 <style>
+  .toc {
+    margin-top: 40px;
+    padding: 16px 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .toc ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  /* Hand-made diagram: white artwork in a framed, scrollable box so small labels stay readable on phones */
+  .diagram {
+    margin: 0;
+  }
+  .diagram-frame {
+    display: block;
+    overflow-x: auto;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: var(--shadow-sm);
+  }
+  .diagram-frame img {
+    display: block;
+    width: 100%;
+    min-width: 720px;
+    height: auto;
+  }
+  .diagram figcaption {
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--muted);
+  }
   .back {
     display: inline-block;
     margin-top: 32px;

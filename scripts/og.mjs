@@ -45,6 +45,12 @@ const homeHtml = (t, lang) => {
 
 const projects = [
   {
+    slug: 'demo-shop', bg: '#E4DED3', layout: 'frame',
+    title: { zh: 'Demo Shop', en: 'Demo Shop' },
+    intro: { zh: '多服務電商後端：在故障和高流量下維持帳務正確，並量出瓶頸。', en: 'A multi-service e-commerce backend that stays correct under failures and load.' },
+    shots: { zh: ['demo-shop-grafana.png'], en: ['demo-shop-grafana.png'] },
+  },
+  {
     slug: 'yoution', bg: '#EBDCCF', layout: 'cascade',
     title: { zh: 'Yoution', en: 'Yoution' },
     intro: { zh: '把 YouTube、文章、PDF 總結成綱要、示意圖與測驗，用於篩選及記憶，並提供後台管理。', en: 'Summarizes YouTube videos, articles and PDFs into outlines, diagrams and quizzes, with an admin back office.' },
@@ -110,9 +116,11 @@ const projectHtml = (p, lang) => `<!doctype html><html><head><meta charset="utf-
     <div class="panel">${panelInner(p, lang)}</div>
   </main></body></html>`;
 
+// Optional: node scripts/og.mjs <slug> renders only that project's two cards
+const only = process.argv[2];
 const jobs = [
-  ...['zh', 'en'].map((lang) => ({ file: `home-${lang}.jpg`, html: homeHtml(home[lang], lang) })),
-  ...projects.flatMap((p) => ['zh', 'en'].map((lang) => ({ file: `${p.slug}-${lang}.jpg`, html: projectHtml(p, lang) }))),
+  ...(only ? [] : ['zh', 'en'].map((lang) => ({ file: `home-${lang}.jpg`, html: homeHtml(home[lang], lang) }))),
+  ...projects.filter((p) => !only || p.slug === only).flatMap((p) => ['zh', 'en'].map((lang) => ({ file: `${p.slug}-${lang}.jpg`, html: projectHtml(p, lang) }))),
 ];
 
 const browser = await chromium.launch({ channel: 'chrome' });

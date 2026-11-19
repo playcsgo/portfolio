@@ -1,0 +1,61 @@
+---
+import { Image } from 'astro:assets';
+import type { Figure, Lang } from '../data/projects';
+import { tx } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  figure: Figure;
+}
+const { lang, figure: f } = Astro.props;
+const src = f.src[lang];
+const url = typeof src === 'string' ? src : src.src;
+---
+
+<figure class:list={['figure', { diagram: f.diagram, half: f.half }]}>
+  <a class="frame" href={url} target="_blank" rel="noopener">
+    {
+      typeof src === 'string' ? (
+        <img src={src} alt={tx(lang, f.alt)} width={f.width} height={f.height} loading="lazy" decoding="async" />
+      ) : (
+        <Image src={src} alt={tx(lang, f.alt)} widths={[640, 960, 1600]} sizes="(min-width: 1000px) 920px, 100vw" format="webp" quality={82} />
+      )
+    }
+  </a>
+  {f.caption && <figcaption>{tx(lang, f.caption)}</figcaption>}
+</figure>
+
+<style>
+  /* min-width 0: as a grid item the figure would otherwise grow to the diagram's min-width and push the page sideways */
+  .figure {
+    margin: 0;
+    min-width: 0;
+  }
+  .frame {
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #141414;
+    box-shadow: var(--shadow-sm);
+  }
+  .frame img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  /* Hand-drawn diagrams are white artwork with small labels: keep them readable on phones by scrolling sideways */
+  .diagram .frame {
+    overflow-x: auto;
+    padding: 16px;
+    background: #ffffff;
+  }
+  .diagram .frame img {
+    min-width: 720px;
+  }
+  figcaption {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+</style>
