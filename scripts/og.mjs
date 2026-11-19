@@ -47,7 +47,7 @@ const projects = [
   {
     slug: 'demo-shop', bg: '#E4DED3', layout: 'frame',
     title: { zh: 'Demo Shop', en: 'Demo Shop' },
-    intro: { zh: '多服務電商後端：在故障和高流量下維持帳務正確，並量出瓶頸。', en: 'A multi-service e-commerce backend that stays correct under failures and load.' },
+    intro: { zh: '分散式微服務電商：Outbox／Inbox＋ACID 確保交易正確，含 AI 客服、Sandbox 整合測試與壓力測試。', en: 'Distributed microservice e-commerce: outbox / inbox and ACID for correct transactions, plus AI-assisted support and sandbox integration and load tests.' },
     shots: { zh: ['demo-shop-grafana.png'], en: ['demo-shop-grafana.png'] },
   },
   {
